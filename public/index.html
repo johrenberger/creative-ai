@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CTI - Clawdexter's Thinking Interface</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --warning: #d29922;
+      --danger: #f85149;
+      --urgent: #f85149;
+      --high: #d29922;
+      --normal: #58a6ff;
+      --low: #8b949e;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    
+    h1 {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      background: var(--surface);
+      padding: 4px;
+      border-radius: 8px;
+      width: fit-content;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--accent); color: #fff; }
+    
+    .panel {
+      display: none;
+    }
+    .panel.active { display: block; }
+    
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .priority-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .priority-urgent { background: var(--urgent); color: #fff; }
+    .priority-high { background: var(--warning); color: #000; }
+    .priority-normal { background: var(--normal); color: #fff; }
+    .priority-low { background: var(--low); color: #fff; }
+    
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+    
+    .status-pending { background: var(--text-dim); }
+    .status-in_progress { background: var(--accent); }
+    .status-blocked { background: var(--danger); }
+    .status-done { background: var(--success); }
+    
+    .task-list { display: flex; flex-direction: column; gap: 8px; }
+    
+    .task-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    
+    .task-item:hover { border-color: var(--accent); }
+    
+    .task-status {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    
+    .task-content { flex: 1; min-width: 0; }
+    .task-title { font-weight: 500; margin-bottom: 2px; }
+    .task-meta { font-size: 12px; color: var(--text-dim); }
+    
+    .tag {
+      display: inline-block;
+      background: var(--border);
+      color: var(--text-dim);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      margin-right: 4px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: var(--border); color: var(--text); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    
+    .btn-sm { padding: 4px 12px; font-size: 12px; }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    
+    .modal.active { display: flex; }
+    
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .form-group { margin-bottom: 16px; }
+    
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text-dim);
+    }
+    
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    textarea { resize: vertical; min-height: 80px; }
+    
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+    }
+    
+    .memory-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+    }
+    
+    .memory-type {
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .memory-content { font-size: 14px; margin-bottom: 8px; }
+    .memory-meta { font-size: 12px; color: var(--text-dim); }
+    
+    .exchange-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+    
+    .exchange-item:hover { border-color: var(--accent); }
+    
+    .exchange-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .exchange-subject { font-weight: 600; }
+    .exchange-type { font-size: 12px; color: var(--accent); text-transform: uppercase; }
+    
+    .exchange-content { color: var(--text-dim); font-size: 14px; margin-bottom: 8px; }
+    .exchange-intent { font-size: 12px; color: var(--warning); margin-bottom: 4px; }
+    .exchange-impact { font-size: 12px; color: var(--text-dim); }
+    
+    .search-box {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    
+    .search-box input { flex: 1; }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-dim);
+    }
+    
+    .ws-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .ws-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+    
+    .ws-indicator.connected { background: var(--success); }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧠 CTI - Clawdexter's Thinking Interface</h1>
+      <div class="ws-status">
+        <span class="ws-indicator" id="wsIndicator"></span>
+        <span id="wsStatus">Disconnected</span>
+      </div>
+    </header>
+    
+    <div class="tabs">
+      <button class="tab active" data-tab="dashboard">Dashboard</button>
+      <button class="tab" data-tab="tasks">Tasks</button>
+      <button class="tab" data-tab="memory">Memory</button>
+      <button class="tab" data-tab="bridge">Bridge</button>
+      <button class="tab" data-tab="context">Context</button>
+    </div>
+    
+    <!-- DASHBOARD -->
+    <div class="panel active" id="panel-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card">
+          <div class="stat-label">Total Tasks</div>
+          <div class="stat-value" id="statTasks">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Open Exchanges</div>
+          <div class="stat-value" id="statExchanges">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Memories</div>
+          <div class="stat-value" id="statMemories">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending High Urgency</div>
+          <div class="stat-value" id="statUrgent">-</div>
+        </div>
+      </div>
+      
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h2>Recent Tasks</h2>
+            <button class="btn btn-sm btn-secondary" onclick="switchTab('tasks')">View All</button>
+          </div>
+          <div id="recentTasks" class="task-list"></div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h2>Open Exchanges</h2>
+            <button class="btn btn-sm btn-secondary" onclick="switchTab('bridge')">View All</button>
+          </div>
+          <div id="recentExchanges"></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- TASKS -->
+    <div class="panel" id="panel-tasks">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="search-box">
+          <input type="text" id="taskSearch" placeholder="Search tasks..." oninput="loadTasks()">
+          <select id="taskFilterStatus" onchange="loadTasks()">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="in_progress">In Progress</option>
+            <option value="blocked">Blocked</option>
+            <option value="done">Done</option>
+          </select>
+          <select id="taskFilterProject" onchange="loadTasks()">
+            <option value="">All Projects</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('taskModal')">+ New Task</button>
+      </div>
+      <div id="taskList" class="task-list"></div>
+    </div>
+    
+    <!-- MEMORY -->
+    <div class="panel" id="panel-memory">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="search-box">
+          <input type="text" id="memorySearch" placeholder="Search memories..." oninput="loadMemories()">
+          <select id="memoryFilterType" onchange="loadMemories()">
+            <option value="">All Types</option>
+            <option value="note">Note</option>
+            <option value="decision">Decision</option>
+            <option value="preference">Preference</option>
+            <option value="pattern">Pattern</option>
+            <option value="learning">Learning</option>
+            <option value="fact">Fact</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('memoryModal')">+ Store Memory</button>
+      </div>
+      <div id="memoryList"></div>
+    </div>
+    
+    <!-- BRIDGE -->
+    <div class="panel" id="panel-bridge">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div class="search-box">
+          <input type="text" id="bridgeSearch" placeholder="Search exchanges..." oninput="loadExchanges()">
+          <select id="bridgeFilterStatus" onchange="loadExchanges()">
+            <option value="">All Status</option>
+            <option value="open">Open</option>
+            <option value="responded">Responded</option>
+            <option value="closed">Closed</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('exchangeModal')">+ New Exchange</button>
+      </div>
+      <div id="exchangeList"></div>
+    </div>
+    
+    <!-- CONTEXT -->
+    <div class="panel" id="panel-context">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2>Current Context</h2>
+        <button class="btn btn-primary" onclick="openModal('contextModal')">+ Set Context</button>
+      </div>
+      <div id="contextList"></div>
+    </div>
+  </div>
+  
+  <!-- TASK MODAL -->
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="taskModalTitle">New Task</h2>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('taskModal')">✕</button>
+      </div>
+      <form id="taskForm" onsubmit="submitTask(event)">
+        <input type="hidden" id="taskId">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="taskTitle" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="taskDescription"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority (1-10)</label>
+            <input type="number" id="taskPriority" min="1" max="10" value="5">
+          </div>
+          <div class="form-group">
+            <label>Urgency (1-10)</label>
+            <input type="number" id="taskUrgency" min="1" max="10" value="5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Project</label>
+          <input type="text" id="taskProject" value="general">
+        </div>
+        <div class="form-group">
+          <label>Tags (comma-separated)</label>
+          <input type="text" id="taskTags" placeholder="tag1, tag2, tag3">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('taskModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- MEMORY MODAL -->
+  <div class="modal" id="memoryModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Store Memory</h2>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('memoryModal')">✕</button>
+      </div>
+      <form id="memoryForm" onsubmit="submitMemory(event)">
+        <div class="form-group">
+          <label>Content *</label>
+          <textarea id="memoryContent" required placeholder="What do you want to remember?"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="memoryType">
+              <option value="note">Note</option>
+              <option value="decision">Decision</option>
+              <option value="preference">Preference</option>
+              <option value="pattern">Pattern</option>
+              <option value="learning">Learning</option>
+              <option value="fact">Fact</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Confidence (0-1)</label>
+            <input type="number" id="memoryConfidence" min="0" max="1" step="0.1" value="0.8">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Tags (comma-separated)</label>
+          <input type="text" id="memoryTags" placeholder="tag1, tag2, tag3">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('memoryModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Store</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- EXCHANGE MODAL -->
+  <div class="modal" id="exchangeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>New Exchange</h2>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('exchangeModal')">✕</button>
+      </div>
+      <form id="exchangeForm" onsubmit="submitExchange(event)">
+        <div class="form-group">
+          <label>Type *</label>
+          <select id="exchangeType" required>
+            <option value="task">Task</option>
+            <option value="clarification">Clarification</option>
+            <option value="decision">Decision</option>
+            <option value="feedback">Feedback</option>
+            <option value="planning">Planning</option>
+            <option value="review">Review</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Subject *</label>
+          <input type="text" id="exchangeSubject" required>
+        </div>
+        <div class="form-group">
+          <label>Content *</label>
+          <textarea id="exchangeContent" required></textarea>
+        </div>
+        <div class="form-group">
+          <label>Intent (what do you want?)</label>
+          <input type="text" id="exchangeIntent">
+        </div>
+        <div class="form-group">
+          <label>Impact (why does it matter?)</label>
+          <textarea id="exchangeImpact"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Priority</label>
+          <select id="exchangePriority">
+            <option value="low">Low</option>
+            <option value="normal" selected>Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('exchangeModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Exchange</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <!-- CONTEXT MODAL -->
+  <div class="modal" id="contextModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Set Context</h2>
+        <button class="btn btn-sm btn-secondary" onclick="closeModal('contextModal')">✕</button>
+      </div>
+      <form id="contextForm" onsubmit="submitContext(event)">
+        <div class="form-group">
+          <label>Key *</label>
+          <input type="text" id="contextKey" required placeholder="e.g., current_project, active_mode">
+        </div>
+        <div class="form-group">
+          <label>Value *</label>
+          <textarea id="contextValue" required placeholder="Value or JSON object"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="contextType">
+            <option value="string">String</option>
+            <option value="json">JSON</option>
+            <option value="number">Number</option>
+            <option value="boolean">Boolean</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Project</label>
+          <input type="text" id="contextProject" value="global">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('contextModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Set Context</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let ws = null;
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      loadDashboard();
+      connectWebSocket();
+      
+      // Tab switching
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          switchTab(tab.dataset.tab);
+        });
+      });
+    });
+    
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+      document.getElementById(`panel-${tabName}`).classList.add('active');
+      
+      // Load data for tab
+      switch(tabName) {
+        case 'tasks': loadTasks(); break;
+        case 'memory': loadMemories(); break;
+        case 'bridge': loadExchanges(); break;
+        case 'context': loadAllContext(); break;
+        case 'dashboard': loadDashboard(); break;
+      }
+    }
+    
+    async function api(method, path, data = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (data) opts.body = JSON.stringify(data);
+      const res = await fetch(API + path, opts);
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+    
+    // WebSocket
+    function connectWebSocket() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      ws = new WebSocket(`${protocol}//${location.host}/ws`);
+      
+      ws.onopen = () => {
+        document.getElementById('wsIndicator').classList.add('connected');
+        document.getElementById('wsStatus').textContent = 'Connected';
+      };
+      
+      ws.onclose = () => {
+        document.getElementById('wsIndicator').classList.remove('connected');
+        document.getElementById('wsStatus').textContent = 'Disconnected';
+        setTimeout(connectWebSocket, 3000);
+      };
+      
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        // Refresh current tab on updates
+        const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+        if (activeTab) switchTab(activeTab);
+      };
+    }
+    
+    // Dashboard
+    async function loadDashboard() {
+      try {
+        const stats = await api('GET', '/api/stats');
+        
+        document.getElementById('statTasks').textContent = stats.tasks.total || 0;
+        document.getElementById('statExchanges').textContent = stats.exchanges.open || 0;
+        document.getElementById('statMemories').textContent = stats.memories.total || 0;
+        document.getElementById('statUrgent').textContent = stats.tasks.pendingHighUrgency || 0;
+        
+        // Recent tasks
+        const tasks = await api('GET', '/api/tasks?limit=5');
+        const taskList = document.getElementById('recentTasks');
+        if (tasks.length === 0) {
+          taskList.innerHTML = '<div class="empty-state">No tasks yet</div>';
+        } else {
+          taskList.innerHTML = tasks.map(t => `
+            <div class="task-item" onclick="editTask(${t.id})">
+              <span class="task-status status-${t.status}"></span>
+              <div class="task-content">
+                <div class="task-title">${escapeHtml(t.title)}</div>
+                <div class="task-meta">
+                  ${t.project} • P${t.priority}/U${t.urgency}
+                  <span class="priority-badge priority-${getPriorityLevel(t.priority, t.urgency)}">${getPriorityLevel(t.priority, t.urgency)}</span>
+                </div>
+              </div>
+            </div>
+          `).join('');
+        }
+        
+        // Open exchanges
+        const exchanges = await api('GET', '/api/bridge/exchange?status=open&limit=5');
+        const exchangeList = document.getElementById('recentExchanges');
+        if (exchanges.length === 0) {
+          exchangeList.innerHTML = '<div class="empty-state">No open exchanges</div>';
+        } else {
+          exchangeList.innerHTML = exchanges.map(e => `
+            <div class="exchange-item" onclick="viewExchange(${e.id})">
+              <div class="exchange-header">
+                <span class="exchange-subject">${escapeHtml(e.subject)}</span>
+                <span class="priority-badge priority-${e.priority}">${e.priority}</span>
+              </div>
+              <div class="exchange-type">${e.exchange_type}</div>
+              <div class="exchange-intent">${e.intent ? 'Intent: ' + escapeHtml(e.intent) : ''}</div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      }
+    }
+    
+    // Tasks
+    async function loadTasks() {
+      try {
+        const status = document.getElementById('taskFilterStatus').value;
+        const project = document.getElementById('taskFilterProject').value;
+        const search = document.getElementById('taskSearch').value;
+        
+        let url = '/api/tasks?limit=100';
+        if (status) url += `&status=${status}`;
+        if (project) url += `&project=${project}`;
+        
+        const tasks = await api('GET', url);
+        
+        // Filter by search client-side
+        let filtered = tasks;
+        if (search) {
+          const q = search.toLowerCase();
+          filtered = tasks.filter(t => 
+            t.title.toLowerCase().includes(q) || 
+            (t.description && t.description.toLowerCase().includes(q))
+          );
+        }
+        
+        const taskList = document.getElementById('taskList');
+        if (filtered.length === 0) {
+          taskList.innerHTML = '<div class="empty-state">No tasks found</div>';
+        } else {
+          taskList.innerHTML = filtered.map(t => `
+            <div class="task-item" onclick="editTask(${t.id})">
+              <span class="task-status status-${t.status}"></span>
+              <div class="task-content">
+                <div class="task-title">${escapeHtml(t.title)}</div>
+                <div class="task-meta">
+                  ${t.project} • Priority: ${t.priority} • Urgency: ${t.urgency}
+                  ${t.tags && t.tags.length > 0 ? '<br>' + t.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('') : ''}
+                </div>
+              </div>
+              <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); deleteTask(${t.id})">✕</button>
+            </div>
+          `).join('');
+        }
+        
+        // Update project filter options
+        const projects = [...new Set(tasks.map(t => t.project))];
+        const projectFilter = document.getElementById('taskFilterProject');
+        const currentProject = projectFilter.value;
+        projectFilter.innerHTML = '<option value="">All Projects</option>' + 
+          projects.map(p => `<option value="${p}"${p === currentProject ? ' selected' : ''}>${p}</option>`).join('');
+      } catch (err) {
+        console.error('Failed to load tasks:', err);
+      }
+    }
+    
+    async function submitTask(event) {
+      event.preventDefault();
+      
+      const id = document.getElementById('taskId').value;
+      const data = {
+        title: document.getElementById('taskTitle').value,
+        description: document.getElementById('taskDescription').value,
+        priority: parseInt(document.getElementById('taskPriority').value),
+        urgency: parseInt(document.getElementById('taskUrgency').value),
+        project: document.getElementById('taskProject').value,
+        tags: document.getElementById('taskTags').value.split(',').map(t => t.trim()).filter(Boolean)
+      };
+      
+      try {
+        if (id) {
+          await api('PATCH', `/api/tasks/${id}`, data);
+        } else {
+          await api('POST', '/api/tasks', data);
+        }
+        closeModal('taskModal');
+        document.getElementById('taskForm').reset();
+        loadTasks();
+      } catch (err) {
+        alert('Failed to save task: ' + err.message);
+      }
+    }
+    
+    async function editTask(id) {
+      try {
+        const task = await api('GET', `/api/tasks/${id}`);
+        document.getElementById('taskModalTitle').textContent = 'Edit Task';
+        document.getElementById('taskId').value = task.id;
+        document.getElementById('taskTitle').value = task.title;
+        document.getElementById('taskDescription').value = task.description || '';
+        document.getElementById('taskPriority').value = task.priority;
+        document.getElementById('taskUrgency').value = task.urgency;
+        document.getElementById('taskProject').value = task.project;
+        document.getElementById('taskTags').value = (task.tags || []).join(', ');
+        openModal('taskModal');
+      } catch (err) {
+        console.error('Failed to load task:', err);
+      }
+    }
+    
+    async function deleteTask(id) {
+      if (!confirm('Delete this task?')) return;
+      try {
+        await api('DELETE', `/api/tasks/${id}`);
+        loadTasks();
+      } catch (err) {
+        alert('Failed to delete task: ' + err.message);
+      }
+    }
+    
+    // Memory
+    async function loadMemories() {
+      try {
+        const type = document.getElementById('memoryFilterType').value;
+        const search = document.getElementById('memorySearch').value;
+        
+        let url = '/api/memory/recent?limit=50';
+        if (type) url = `/api/memory/search?type=${type}&limit=50`;
+        
+        let memories = await api('GET', url);
+        
+        if (search) {
+          const q = search.toLowerCase();
+          memories = memories.filter(m => 
+            m.content.toLowerCase().includes(q) ||
+            (m.tags && m.tags.some(t => t.toLowerCase().includes(q)))
+          );
+        }
+        
+        const memoryList = document.getElementById('memoryList');
+        if (memories.length === 0) {
+          memoryList.innerHTML = '<div class="empty-state">No memories found</div>';
+        } else {
+          memoryList.innerHTML = memories.map(m => `
+            <div class="memory-item">
+              <div class="memory-type">${m.type}</div>
+              <div class="memory-content">${escapeHtml(m.content)}</div>
+              <div class="memory-meta">
+                ${m.tags && m.tags.length > 0 ? m.tags.map(t => `<span class="tag">${escapeHtml(t)}</span>`).join('') : ''}
+                • Accessed ${m.access_count}x • ${new Date(m.created_at).toLocaleDateString()}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load memories:', err);
+      }
+    }
+    
+    async function submitMemory(event) {
+      event.preventDefault();
+      
+      const data = {
+        content: document.getElementById('memoryContent').value,
+        type: document.getElementById('memoryType').value,
+        confidence: parseFloat(document.getElementById('memoryConfidence').value),
+        tags: document.getElementById('memoryTags').value.split(',').map(t => t.trim()).filter(Boolean),
+        source: 'web-ui'
+      };
+      
+      try {
+        await api('POST', '/api/memory', data);
+        closeModal('memoryModal');
+        document.getElementById('memoryForm').reset();
+        loadMemories();
+      } catch (err) {
+        alert('Failed to store memory: ' + err.message);
+      }
+    }
+    
+    // Bridge
+    async function loadExchanges() {
+      try {
+        const status = document.getElementById('bridgeFilterStatus').value;
+        const search = document.getElementById('bridgeSearch').value;
+        
+        let url = '/api/bridge/exchange?limit=50';
+        if (status) url += `&status=${status}`;
+        
+        let exchanges = await api('GET', url);
+        
+        if (search) {
+          const q = search.toLowerCase();
+          exchanges = exchanges.filter(e => 
+            e.subject.toLowerCase().includes(q) ||
+            e.content.toLowerCase().includes(q) ||
+            (e.intent && e.intent.toLowerCase().includes(q))
+          );
+        }
+        
+        const exchangeList = document.getElementById('exchangeList');
+        if (exchanges.length === 0) {
+          exchangeList.innerHTML = '<div class="empty-state">No exchanges found</div>';
+        } else {
+          exchangeList.innerHTML = exchanges.map(e => `
+            <div class="exchange-item" onclick="viewExchange(${e.id})">
+              <div class="exchange-header">
+                <span class="exchange-subject">${escapeHtml(e.subject)}</span>
+                <span class="priority-badge priority-${e.priority}">${e.priority}</span>
+              </div>
+              <div class="exchange-type">${e.exchange_type}</div>
+              <div class="exchange-content">${escapeHtml(e.content.slice(0, 150))}${e.content.length > 150 ? '...' : ''}</div>
+              ${e.intent ? `<div class="exchange-intent">Intent: ${escapeHtml(e.intent)}</div>` : ''}
+              <div class="memory-meta">
+                Status: ${e.status} • Created: ${new Date(e.created_at).toLocaleDateString()}
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load exchanges:', err);
+      }
+    }
+    
+    async function submitExchange(event) {
+      event.preventDefault();
+      
+      const data = {
+        exchangeType: document.getElementById('exchangeType').value,
+        subject: document.getElementById('exchangeSubject').value,
+        content: document.getElementById('exchangeContent').value,
+        intent: document.getElementById('exchangeIntent').value,
+        impact: document.getElementById('exchangeImpact').value,
+        priority: document.getElementById('exchangePriority').value
+      };
+      
+      try {
+        await api('POST', '/api/bridge/message', data);
+        closeModal('exchangeModal');
+        document.getElementById('exchangeForm').reset();
+        loadExchanges();
+      } catch (err) {
+        alert('Failed to create exchange: ' + err.message);
+      }
+    }
+    
+    async function viewExchange(id) {
+      try {
+        const e = await api('GET', `/api/bridge/exchange/${id}`);
+        alert(`Subject: ${e.subject}\n\nType: ${e.exchange_type}\nStatus: ${e.status}\nPriority: ${e.priority}\n\nContent:\n${e.content}\n\nIntent: ${e.intent || 'N/A'}\nImpact: ${e.impact || 'N/A'}`);
+      } catch (err) {
+        console.error('Failed to load exchange:', err);
+      }
+    }
+    
+    // Context
+    async function loadAllContext() {
+      try {
+        const contexts = await api('GET', '/api/context');
+        const contextList = document.getElementById('contextList');
+        if (contexts.length === 0) {
+          contextList.innerHTML = '<div class="empty-state">No context set</div>';
+        } else {
+          contextList.innerHTML = contexts.map(c => `
+            <div class="card">
+              <div class="card-header">
+                <strong>${escapeHtml(c.key)}</strong>
+                <span class="tag">${c.type}</span>
+                <button class="btn btn-sm btn-danger" onclick="deleteContext('${escapeHtml(c.key)}')">✕</button>
+              </div>
+              <pre style="background: var(--bg); padding: 12px; border-radius: 6px; overflow-x: auto;">${typeof c.value === 'object' ? JSON.stringify(c.value, null, 2) : escapeHtml(String(c.value))}</pre>
+              <div class="memory-meta">Project: ${c.project} • Updated: ${new Date(c.updated_at).toLocaleDateString()}</div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load context:', err);
+      }
+    }
+    
+    async function submitContext(event) {
+      event.preventDefault();
+      
+      let value = document.getElementById('contextValue').value;
+      const type = document.getElementById('contextType').value;
+      
+      if (type === 'json') {
+        try {
+          value = JSON.parse(value);
+        } catch {
+          alert('Invalid JSON');
+          return;
+        }
+      }
+      
+      const data = {
+        key: document.getElementById('contextKey').value,
+        value,
+        type,
+        project: document.getElementById('contextProject').value
+      };
+      
+      try {
+        await api('POST', '/api/context', data);
+        closeModal('contextModal');
+        document.getElementById('contextForm').reset();
+        loadAllContext();
+      } catch (err) {
+        alert('Failed to set context: ' + err.message);
+      }
+    }
+    
+    async function deleteContext(key) {
+      if (!confirm(`Delete context "${key}"?`)) return;
+      try {
+        await api('DELETE', `/api/context/${encodeURIComponent(key)}`);
+        loadAllContext();
+      } catch (err) {
+        alert('Failed to delete context: ' + err.message);
+      }
+    }
+    
+    // Utilities
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+    }
+    
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+      document.getElementById('taskModalTitle').textContent = 'New Task';
+    }
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+    
+    function getPriorityLevel(priority, urgency) {
+      if (urgency >= 8) return 'urgent';
+      if (urgency >= 6 || priority >= 8) return 'high';
+      if (urgency <= 3 && priority <= 3) return 'low';
+      return 'normal';
+    }
+    
+    // Close modals on escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.active').forEach(m => m.classList.remove('active'));
+      }
+    });
+    
+    // Close modals on backdrop click
+    document.querySelectorAll('.modal').forEach(modal => {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal(modal.id);
+      });
+    });
+  </script>
+</body>
+</html>
