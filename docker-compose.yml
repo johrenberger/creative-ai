@@ -9,7 +9,7 @@ services:
       - CTI_PORT=3456
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.cti.rule=Host(`cti.${TRAEFIK_HOST}`)"
+      - "traefik.http.routers.cti.rule=Host(`cti.clawdexter.tech`)"
       - "traefik.http.routers.cti.entrypoints=websecure"
       - "traefik.http.routers.cti.tls.certresolver=letsencrypt"
       - "traefik.http.services.cti.loadbalancer.server.port=3456"
