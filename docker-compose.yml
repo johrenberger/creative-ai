@@ -14,8 +14,8 @@ services:
       - "traefik.http.routers.cti.tls.certresolver=letsencrypt"
       - "traefik.http.services.cti.loadbalancer.server.port=3456"
     networks:
-      - traefik-jsq2-traefik-1
+      - familyplanning_default
 
 networks:
-  traefik-jsq2-traefik-1:
+  familyplanning_default:
     external: true
