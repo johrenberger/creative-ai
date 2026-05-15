@@ -437,7 +437,7 @@ process.on('SIGINT', () => {
 
 initializeDatabase();
 
-server.listen(PORT, () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`
 ╔═══════════════════════════════════════════╗
 ║   CTI v1.0.0 - Thinking Interface          ║
