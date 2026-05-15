@@ -14,8 +14,7 @@ FROM node:22-slim AS production
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodeuser -u 1001
+RUN groupadd --gid 1001 nodejs && useradd --uid 1001 --gid nodejs --shell /bin/bash --create-home nodeuser
 
 # Copy dependencies
 COPY --from=builder /app/node_modules ./node_modules
