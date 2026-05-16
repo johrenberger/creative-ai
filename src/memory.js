@@ -46,7 +46,7 @@ export function searchMemories(query, { type, _tags, project, _limit = 20 } = {}
   }
 
   if (project) {
-    sql += ' AND (project = ? OR project = "global")';
+    sql += " AND (project = ? OR project = 'global')";
     params.push(project);
   }
 

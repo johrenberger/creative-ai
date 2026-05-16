@@ -8,8 +8,11 @@ import { getDb } from './db.js';
 export function setContext(key, value, type = 'string', project = 'global', updatedBy = 'system') {
   const database = getDb();
 
-  const dbType = type === 'object' ? 'json' : type;
-  const dbValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+  // Infer type from value when not explicitly set to a specific type
+  const inferredType = typeof value;
+  const needsJsonStorage = inferredType === 'object' || inferredType === 'number' || inferredType === 'boolean';
+  const dbType = needsJsonStorage ? 'json' : type;
+  const dbValue = (typeof value === 'object' || typeof value === 'number' || typeof value === 'boolean') ? JSON.stringify(value) : String(value);
 
   const stmt = database.prepare(`
     INSERT INTO context (key, value, type, project, updated_by)
