@@ -405,24 +405,6 @@ function verifyWebhookSignature(req) {
   return sig === expected;
 }
 
-app.post('/webhook/deploy', express.raw({ type: 'application/json' }), (req, res) => {
-  if (!verifyWebhookSignature(req)) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
-  const projectDir = '/docker/openclaw-aejq/data/.openclaw/workspace/creative-ai';
-  exec(`cd ${projectDir} && docker compose pull && docker compose up -d --build cti`,
-    (err, stdout, stderr) => {
-      if (err) {
-        console.error('Deploy failed:', stderr);
-        return res.status(500).json({ error: 'Deploy failed', details: stderr });
-      }
-      console.log('Deploy triggered:', stdout);
-      return res.json({ ok: true, output: stdout });
-    }
-  );
-});
-
 // ============ STATIC FILES ============
 
 app.use(express.static(join(__dirname, '..', 'public')));
