@@ -9,7 +9,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
-const _readFileSync = () => { /* kept for future schema versioning */ };
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createHmac } from 'crypto';
@@ -77,8 +77,8 @@ function sanitize(str) {
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({
-    status: 'ok',
+  res.json({ 
+    status: 'ok', 
     uptime: process.uptime(),
     version: '1.0.0',
     stats: getSchemaStats()
@@ -100,7 +100,7 @@ app.get('/api/stats', (req, res) => {
 app.post('/api/tasks', (req, res) => {
   const validation = validateRequired(req.body, ['title']);
   if (!validation.valid) return res.status(400).json(validation);
-
+  
   try {
     const task = tasks.createTask({
       title: sanitize(req.body.title),
@@ -111,7 +111,7 @@ app.post('/api/tasks', (req, res) => {
       tags: Array.isArray(req.body.tags) ? req.body.tags.map(sanitize) : [],
       createdBy: sanitize(req.body.createdBy || 'justin')
     });
-
+    
     broadcast({ type: 'task_created', data: task });
     res.status(201).json(task);
   } catch (err) {
@@ -169,7 +169,7 @@ app.delete('/api/tasks/:id', (req, res) => {
 
 app.post('/api/context', (req, res) => {
   if (!req.body.key) return res.status(400).json({ error: 'Missing required field: key' });
-
+  
   try {
     const ctx = context.setContext(
       sanitize(req.body.key),
@@ -219,7 +219,7 @@ app.delete('/api/context/:key', (req, res) => {
 app.post('/api/memory', (req, res) => {
   const validation = validateRequired(req.body, ['content']);
   if (!validation.valid) return res.status(400).json(validation);
-
+  
   try {
     const mem = memory.storeMemory({
       content: sanitize(req.body.content),
@@ -229,7 +229,7 @@ app.post('/api/memory', (req, res) => {
       confidence: Math.min(1, Math.max(0, parseFloat(req.body.confidence) || 0.8)),
       source: sanitize(req.body.source || 'interaction')
     });
-
+    
     broadcast({ type: 'memory_stored', data: mem });
     res.status(201).json(mem);
   } catch (err) {
@@ -297,13 +297,13 @@ app.delete('/api/memory/:id', (req, res) => {
 app.post('/api/bridge/message', (req, res) => {
   const validation = validateRequired(req.body, ['exchangeType', 'subject', 'content']);
   if (!validation.valid) return res.status(400).json(validation);
-
+  
   if (!bridge.EXCHANGE_TYPES[req.body.exchangeType.toUpperCase()]) {
-    return res.status(400).json({
-      error: `Invalid exchange type. Valid types: ${Object.keys(bridge.EXCHANGE_TYPES).join(', ')}`
+    return res.status(400).json({ 
+      error: `Invalid exchange type. Valid types: ${Object.keys(bridge.EXCHANGE_TYPES).join(', ')}` 
     });
   }
-
+  
   try {
     const exchange = bridge.createExchange({
       exchangeType: req.body.exchangeType,
@@ -315,7 +315,7 @@ app.post('/api/bridge/message', (req, res) => {
       createdBy: sanitize(req.body.createdBy || 'justin'),
       responseBy: sanitize(req.body.responseBy || 'clawdexter')
     });
-
+    
     broadcast({ type: 'exchange_created', data: exchange });
     res.status(201).json(exchange);
   } catch (err) {
@@ -349,7 +349,7 @@ app.get('/api/bridge/exchange/:id', (req, res) => {
 
 app.post('/api/bridge/exchange/:id/respond', (req, res) => {
   if (!req.body.response) return res.status(400).json({ error: 'Missing required field: response' });
-
+  
   try {
     bridge.respondToExchange(parseInt(req.params.id), sanitize(req.body.response), sanitize(req.body.responder || 'clawdexter'))
       .then(exchange => {
@@ -396,7 +396,7 @@ app.get('/api/preferences', (req, res) => {
 
 app.post('/api/preferences', (req, res) => {
   if (!req.body.key) return res.status(400).json({ error: 'Missing required field: key' });
-
+  
   try {
     const pref = context.setPreference(sanitize(req.body.key), sanitize(req.body.value || ''));
     res.json(pref);
@@ -407,20 +407,17 @@ app.post('/api/preferences', (req, res) => {
 
 // ============ WEBHOOK ============
 
-const _WEBHOOK_SECRET = process.env.CTI_WEBHOOK_SECRET || '';
+const WEBHOOK_SECRET = process.env.CTI_WEBHOOK_SECRET || '';
 
-function _verifyWebhookSignature(req) {
-  if (!_WEBHOOK_SECRET) return false; // Secret required — no bypass
+function verifyWebhookSignature(req) {
+  if (!WEBHOOK_SECRET) return false; // Secret required — no bypass
   const sig = req.headers['x-hub-signature-256'];
   if (!sig) return false;
-  const hmac = createHmac('sha256', _WEBHOOK_SECRET);
+  const hmac = createHmac('sha256', WEBHOOK_SECRET);
   hmac.update(JSON.stringify(req.body));
   const expected = `sha256=${hmac.digest('hex')}`;
   return sig === expected;
 }
-
-// Webhook signature left in source for future use — not called in current flow
-void _verifyWebhookSignature;
 
 // ============ IMAGE PROXY (avoids mixed content warnings) ============
 
@@ -469,7 +466,7 @@ app.get('/img', async (req, res) => {
     res.set('Cache-Control', 'public, max-age=86400');
     res.set('X-Content-Type-Options', 'nosniff');
     r.body.pipe(res);
-  } catch {
+  } catch (err) {
     res.status(502).json({ error: 'Fetch failed' });
   }
 });
@@ -486,13 +483,13 @@ const clients = new Set();
 wss.on('connection', (ws) => {
   clients.add(ws);
   console.log('✓ WebSocket client connected');
-
+  
   ws.on('close', () => {
     clients.delete(ws);
   });
-
-  ws.on('error', (_wsErr) => {
-    console.error('WebSocket error:', _wsErr.message);
+  
+  ws.on('error', (err) => {
+    console.error('WebSocket error:', err.message);
     clients.delete(ws);
   });
 });
@@ -522,7 +519,7 @@ process.on('SIGINT', () => {
 
 initializeDatabase();
 
-server.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, "0.0.0.0", () => {
   console.log(`
 ╔═══════════════════════════════════════════╗
 ║   CTI v1.0.0 - Thinking Interface          ║
