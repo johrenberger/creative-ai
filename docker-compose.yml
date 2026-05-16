@@ -7,8 +7,6 @@ services:
     environment:
       CTI_PORT: "3456"
       CTI_WEBHOOK_SECRET: ${CTI_WEBHOOK_SECRET}
-    networks:
-      - traefik-jsq2_default
     labels:
       - traefik.enable=true
       - traefik.http.routers.cti.rule=Host(`cti.clawdexter.tech`)
@@ -22,7 +20,3 @@ services:
     restart: unless-stopped
     ports:
       - "3456:3456"
-
-networks:
-  traefik-jsq2_default:
-    external: true
