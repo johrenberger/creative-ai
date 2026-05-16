@@ -125,7 +125,7 @@ export function getExchangeStats() {
   const total = database.prepare('SELECT COUNT(*) as count FROM exchanges').get().count;
   const byStatus = database.prepare('SELECT status, COUNT(*) as count FROM exchanges GROUP BY status').all();
   const byType = database.prepare('SELECT exchange_type, COUNT(*) as count FROM exchanges GROUP BY exchange_type').all();
-  const open = database.prepare('SELECT COUNT(*) as count FROM exchanges WHERE status = "open"').get().count;
+  const open = database.prepare("SELECT COUNT(*) as count FROM exchanges WHERE status = 'open'").get().count;
   
   return {
     total,

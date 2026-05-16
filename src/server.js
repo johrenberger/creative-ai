@@ -12,6 +12,8 @@ import { createServer } from 'http';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createHmac } from 'crypto';
+import { exec } from 'child_process';
 
 import { initializeDatabase, getSchemaStats, closeDatabase } from './db.js';
 import * as tasks from './tasks.js';
@@ -387,6 +389,38 @@ app.post('/api/preferences', (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ============ WEBHOOK ============
+
+const WEBHOOK_SECRET = process.env.CTI_WEBHOOK_SECRET || '';
+
+function verifyWebhookSignature(req) {
+  if (!WEBHOOK_SECRET) return true; // Secret not configured, skip verification
+  const sig = req.headers['x-hub-signature-256'];
+  if (!sig) return false;
+  const hmac = createHmac('sha256', WEBHOOK_SECRET);
+  hmac.update(JSON.stringify(req.body));
+  const expected = `sha256=${hmac.digest('hex')}`;
+  return sig === expected;
+}
+
+app.post('/webhook/deploy', express.raw({ type: 'application/json' }), (req, res) => {
+  if (!verifyWebhookSignature(req)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const projectDir = '/docker/openclaw-aejq/data/.openclaw/workspace/creative-ai';
+  exec(`cd ${projectDir} && docker compose pull && docker compose up -d --build cti`,
+    (err, stdout, stderr) => {
+      if (err) {
+        console.error('Deploy failed:', stderr);
+        return res.status(500).json({ error: 'Deploy failed', details: stderr });
+      }
+      console.log('Deploy triggered:', stdout);
+      return res.json({ ok: true, output: stdout });
+    }
+  );
 });
 
 // ============ STATIC FILES ============

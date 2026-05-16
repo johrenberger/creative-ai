@@ -46,7 +46,7 @@ export function getAllContext(project = null) {
   const params = [];
   
   if (project) {
-    query += ' WHERE project = ? OR project = "global"';
+    query += ' WHERE project = ? OR project = \'global\'';
     params.push(project);
   }
   

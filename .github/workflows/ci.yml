@@ -186,16 +186,23 @@ jobs:
           cache-to: type=gha,mode=max
 
   deploy:
-    name: Deployment Summary
+    name: Deploy to VPS
     runs-on: ubuntu-latest
     needs: docker
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     steps:
-      - name: Create deployment record
+      - name: Trigger VPS redeploy
         run: |
-          echo "# Deployment Summary" > deployment.md
-          echo "Commit: \`${{ github.sha }}\`" >> deployment.md
-          echo "Repository: ${{ github.repository }}" >> deployment.md
-          echo "Image: ghcr.io/${{ github.actor }}/cti:${{ github.sha }}" >> deployment.md
-          echo "Deployed at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> deployment.md
-          cat deployment.md
+          WEBHOOK_SECRET='${{ secrets.CTI_WEBHOOK_SECRET }}'
+          IMAGE="ghcr.io/${{ github.actor }}/cti:${{ github.sha }}"
+          PAYLOAD=$(jq -n --arg img "$IMAGE" '{image: $img}')
+          
+          SIGNATURE=$(echo -n "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | sed 's/^.* //')
+          
+          curl -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: sha256=$SIGNATURE" \
+            -d "$PAYLOAD" \
+            https://cti.clawdexter.tech/webhook/deploy
+        env:
+          CTI_WEBHOOK_SECRET: ${{ secrets.CTI_WEBHOOK_SECRET }}

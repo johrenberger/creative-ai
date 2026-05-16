@@ -39,7 +39,7 @@ export function getTasks({ status, project, assignedTo, limit = 50 } = {}) {
   const database = getDb();
   
   let query = `
-    SELECT *, ${calculatePriorityScore('priority', 'urgency')} as score
+    SELECT *, ((11 - urgency) * 2 + (11 - priority)) as score
     FROM tasks WHERE 1=1
   `;
   const params = [];
@@ -127,7 +127,7 @@ export function getTaskStats() {
   const total = database.prepare('SELECT COUNT(*) as count FROM tasks').get().count;
   const byStatus = database.prepare('SELECT status, COUNT(*) as count FROM tasks GROUP BY status').all();
   const byProject = database.prepare('SELECT project, COUNT(*) as count FROM tasks GROUP BY project').all();
-  const pendingHighUrgency = database.prepare('SELECT COUNT(*) as count FROM tasks WHERE status = "pending" AND urgency >= 8').get().count;
+  const pendingHighUrgency = database.prepare("SELECT COUNT(*) as count FROM tasks WHERE status = 'pending' AND urgency >= 8").get().count;
   
   return {
     total,
