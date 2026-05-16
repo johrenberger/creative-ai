@@ -58,7 +58,7 @@ export function getExchanges({ status, exchangeType, priority, limit = 50 } = {}
     params.push(priority);
   }
 
-  query += ' ORDER BY CASE priority WHEN "urgent" THEN 1 WHEN "high" THEN 2 WHEN "normal" THEN 3 WHEN "low" THEN 4 END, created_at DESC LIMIT ?';
+  query += ` ORDER BY CASE priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'normal' THEN 3 WHEN 'low' THEN 4 END, created_at DESC LIMIT ?`;
   params.push(limit);
 
   return database.prepare(query).all(...params);
