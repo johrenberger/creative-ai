@@ -30,7 +30,7 @@ export function getDb() {
 export function initializeDatabase() {
   const database = getDb();
   const schemaPath = join(__dirname, '..', 'db', 'schema.sql');
-  
+
   try {
     const schema = readFileSync(schemaPath, 'utf8');
     database.exec(schema);
@@ -53,7 +53,7 @@ export function getSchemaStats() {
   const database = getDb();
   const tables = ['tasks', 'context', 'memories', 'exchanges', 'preferences'];
   const stats = {};
-  
+
   for (const table of tables) {
     try {
       const result = database.prepare(`SELECT COUNT(*) as count FROM ${table}`).get();
@@ -62,7 +62,7 @@ export function getSchemaStats() {
       stats[table] = 0;
     }
   }
-  
+
   return stats;
 }
 

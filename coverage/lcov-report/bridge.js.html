@@ -227,7 +227,8 @@
 <a name='L162'></a><a href='#L162'>162</a>
 <a name='L163'></a><a href='#L163'>163</a>
 <a name='L164'></a><a href='#L164'>164</a>
-<a name='L165'></a><a href='#L165'>165</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L165'></a><a href='#L165'>165</a>
+<a name='L166'></a><a href='#L166'>166</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -391,10 +392,11 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Bridge Module
  * Structured communication patterns between Justin and Clawdexter
- * 
+ *
  * The Bridge enforces intentional exchanges by requiring:
  * - Subject: What is being discussed
  * - Content: The actual message
@@ -407,14 +409,14 @@ import { storeMemory } from './memory.js';
 &nbsp;
 export function createExchange({ exchangeType, subject, content, intent = '', impact = '', priority = 'normal', createdBy = 'justin', responseBy = 'clawdexter' }) {
   const database = getDb();
-  
+&nbsp;
   const stmt = database.prepare(`
     INSERT INTO exchanges (exchange_type, subject, content, intent, impact, priority, created_by, response_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  
+&nbsp;
   const result = stmt.run(exchangeType, subject, content, intent, impact, priority, createdBy, responseBy);
-  
+&nbsp;
   return {
     id: result.lastInsertRowid,
     exchangeType,
@@ -432,28 +434,28 @@ export function createExchange({ exchangeType, subject, content, intent = '', im
 &nbsp;
 export function getExchanges({ status, exchangeType, priority, limit = 50 } = {}) {
   const database = getDb();
-  
+&nbsp;
   let query = 'SELECT * FROM exchanges WHERE 1=1';
   const params = [];
-  
+&nbsp;
   if (status) {
     query += ' AND status = ?';
     params.push(status);
   }
-  
+&nbsp;
   if (exchangeType) {
     query += ' AND exchange_type = ?';
     params.push(exchangeType);
   }
-  
+&nbsp;
   if (priority) {
     query += ' AND priority = ?';
     params.push(priority);
   }
-  
+&nbsp;
   query += ' ORDER BY CASE priority WHEN "urgent" THEN 1 WHEN "high" THEN 2 WHEN "normal" THEN 3 WHEN "low" THEN 4 END, created_at DESC LIMIT ?';
   params.push(limit);
-  
+&nbsp;
   return database.prepare(query).all(...params);
 }
 &nbsp;
@@ -463,19 +465,19 @@ export function getExchange(id) {
 &nbsp;
 export async function respondToExchange(id, response, responder = 'clawdexter') {
   const database = getDb();
-  
+&nbsp;
   const stmt = database.prepare(`
     UPDATE exchanges 
     SET status = 'responded', responded_at = CURRENT_TIMESTAMP
     WHERE id = ? AND status = 'open'
   `);
-  
+&nbsp;
   const result = stmt.run(id);
-  
+&nbsp;
   if (result.changes === 0) {
     return null;
   }
-  
+&nbsp;
   // Store the response as a memory
   const exchange = getExchange(id);
   <span class="missing-if-branch" title="else path not taken" >E</span>if (exchange) {
@@ -490,7 +492,7 @@ export async function respondToExchange(id, response, responder = 'clawdexter') 
 <span class="cstat-no" title="statement not covered" >      console.error('Failed to store exchange response memory:', e.message);</span>
     }
   }
-  
+&nbsp;
   return getExchange(id);
 }
 &nbsp;
@@ -499,7 +501,7 @@ export function closeExchange(id) {
   const result = database.prepare(`
     UPDATE exchanges SET status = 'closed', closed_at = CURRENT_TIMESTAMP WHERE id = ?
   `).run(id);
-  
+&nbsp;
   return result.changes &gt; 0;
 }
 &nbsp;
@@ -508,18 +510,18 @@ export function escalateExchange(id) {
   const result = database.prepare(`
     UPDATE exchanges SET status = 'escalated', priority = 'urgent' WHERE id = ?
   `).run(id);
-  
+&nbsp;
   return result.changes &gt; 0 ? getExchange(id) : null;
 }
 &nbsp;
 export function getExchangeStats() {
   const database = getDb();
-  
+&nbsp;
   const total = database.prepare('SELECT COUNT(*) as count FROM exchanges').get().count;
   const byStatus = database.prepare('SELECT status, COUNT(*) as count FROM exchanges GROUP BY status').all();
   const byType = database.prepare('SELECT exchange_type, COUNT(*) as count FROM exchanges GROUP BY exchange_type').all();
   const open = database.prepare("SELECT COUNT(*) as count FROM exchanges WHERE status = 'open'").get().count;
-  
+&nbsp;
   return {
     total,
     open,
@@ -555,14 +557,15 @@ export default {
   getOpenExchanges,
   EXCHANGE_TYPES,
   PRIORITIES
-};</pre></td></tr></table></pre>
+};
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-15T03:42:46.915Z
+                at 2026-05-16T21:04:04.620Z
             </div>
         <script src="prettify.js"></script>
         <script>

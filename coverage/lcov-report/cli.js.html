@@ -615,7 +615,8 @@
 <a name='L550'></a><a href='#L550'>550</a>
 <a name='L551'></a><a href='#L551'>551</a>
 <a name='L552'></a><a href='#L552'>552</a>
-<a name='L553'></a><a href='#L553'>553</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L553'></a><a href='#L553'>553</a>
+<a name='L554'></a><a href='#L554'>554</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -1167,6 +1168,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">#!/usr/bin/env node
 /**
  * CTI CLI
@@ -1252,7 +1254,7 @@ function <span class="fstat-no" title="function not covered" >apiRequest(</span>
       method,
       headers: { 'Content-Type': 'application/json' }
     };
-    
+&nbsp;
     const req = <span class="cstat-no" title="statement not covered" >http.request(url, options, <span class="fstat-no" title="function not covered" >(r</span>es) =&gt; {</span>
       let body = <span class="cstat-no" title="statement not covered" >'';</span>
 <span class="cstat-no" title="statement not covered" >      res.on('data', <span class="fstat-no" title="function not covered" >ch</span>unk =&gt; <span class="cstat-no" title="statement not covered" >body += chunk)</span>;</span>
@@ -1264,9 +1266,9 @@ function <span class="fstat-no" title="function not covered" >apiRequest(</span>
         }
       });
     });
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    req.on('error', reject);</span>
-    
+&nbsp;
 <span class="cstat-no" title="statement not covered" >    if (data) {</span>
 <span class="cstat-no" title="statement not covered" >      req.write(JSON.stringify(data));</span>
     }
@@ -1289,25 +1291,25 @@ async function <span class="fstat-no" title="function not covered" >listTasks(</
 <span class="cstat-no" title="statement not covered" >      console.log(`    Priority: ${t.priority} | Urgency: ${t.urgency} | Project: ${t.project}`);</span>
     });
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >addTask(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  console.log('\n ADD TASK');</span>
 <span class="cstat-no" title="statement not covered" >  console.log('─'.repeat(40));</span>
-  
+&nbsp;
   const title = <span class="cstat-no" title="statement not covered" >await prompt('Title: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!title) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const description = <span class="cstat-no" title="statement not covered" >await prompt('Description (optional): ');</span>
   const project = <span class="cstat-no" title="statement not covered" >await prompt('Project (default: general): ') || 'general';</span>
   const priority = <span class="cstat-no" title="statement not covered" >await prompt('Priority 1-10 (default: 5): ') || '5';</span>
   const urgency = <span class="cstat-no" title="statement not covered" >await prompt('Urgency 1-10 (default: 5): ') || '5';</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const task = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', '/api/tasks', {</span>
       title,
@@ -1317,8 +1319,8 @@ async function <span class="fstat-no" title="function not covered" >addTask(</sp
       urgency: parseInt(urgency)
     });
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Task created: #${task.id}\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1327,7 +1329,7 @@ async function <span class="fstat-no" title="function not covered" >getTask(</sp
     const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
 <span class="cstat-no" title="statement not covered" >    id = await prompt('Task ID: ');</span>
   }
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const task = <span class="cstat-no" title="statement not covered" >await apiRequest('GET', `/api/tasks/${id}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('\n TASK');</span>
@@ -1340,37 +1342,37 @@ async function <span class="fstat-no" title="function not covered" >getTask(</sp
 <span class="cstat-no" title="statement not covered" >    console.log(`Tags:     ${task.tags?.join(', ') || 'none'}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`Created:  ${task.created_at}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >updateTask(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
   const id = <span class="cstat-no" title="statement not covered" >await prompt('Task ID: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!id) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const status = <span class="cstat-no" title="statement not covered" >await prompt('New status (pending/in_progress/blocked/done/cancelled): ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!status) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const task = <span class="cstat-no" title="statement not covered" >await apiRequest('PATCH', `/api/tasks/${id}`, { status });</span>
+    const _task = <span class="cstat-no" title="statement not covered" >await apiRequest('PATCH', `/api/tasks/${id}`, { status });</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Task #${id} updated to "${status}"\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >deleteTask(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
   const id = <span class="cstat-no" title="statement not covered" >await prompt('Task ID to delete: ');</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    await apiRequest('DELETE', `/api/tasks/${id}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Task #${id} deleted\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1383,8 +1385,8 @@ async function <span class="fstat-no" title="function not covered" >taskStats(</
 <span class="cstat-no" title="statement not covered" >    console.log('By Status:', JSON.stringify(stats.tasks.byStatus));</span>
 <span class="cstat-no" title="statement not covered" >    console.log('By Project:', JSON.stringify(stats.tasks.byProject));</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`High Urgency: ${stats.tasks.pendingHighUrgency}\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1397,8 +1399,8 @@ async function <span class="fstat-no" title="function not covered" >showStats(</
 <span class="cstat-no" title="statement not covered" >    console.log('\n MEMORIES:', stats.memories.total, stats.memories.byType);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('\n EXCHANGES:', stats.exchanges.total, 'open:', stats.exchanges.open);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1407,7 +1409,7 @@ async function <span class="fstat-no" title="function not covered" >searchMemory
     const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
 <span class="cstat-no" title="statement not covered" >    query = await prompt('Search query: ');</span>
   }
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const results = <span class="cstat-no" title="statement not covered" >await apiRequest('GET', `/api/memory/search?q=${encodeURIComponent(query)}`);</span>
 <span class="cstat-no" title="statement not covered" >    if (results.length === 0) {</span>
@@ -1421,23 +1423,23 @@ async function <span class="fstat-no" title="function not covered" >searchMemory
 <span class="cstat-no" title="statement not covered" >      console.log(`  Tags: ${m.tags?.join(', ') || 'none'} | Accessed: ${m.access_count}x`);</span>
     });
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >addMemory(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  console.log('\n ADD MEMORY');</span>
 <span class="cstat-no" title="statement not covered" >  console.log('─'.repeat(40));</span>
-  
+&nbsp;
   const content = <span class="cstat-no" title="statement not covered" >await prompt('Content: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!content) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const type = <span class="cstat-no" title="statement not covered" >await prompt('Type (note/decision/preference/pattern/learning/fact, default: note): ') || 'note';</span>
   const tags = <span class="cstat-no" title="statement not covered" >await prompt('Tags (comma-separated): ') || '';</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const mem = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', '/api/memory', {</span>
       content,
@@ -1446,8 +1448,8 @@ async function <span class="fstat-no" title="function not covered" >addMemory(</
       source: 'cli'
     });
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Memory stored: #${mem.id}\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1464,8 +1466,8 @@ async function <span class="fstat-no" title="function not covered" >recentMemori
 <span class="cstat-no" title="statement not covered" >      console.log(`[${m.type}] ${m.content.slice(0, 80)}${m.content.length &gt; 80 ? '...' : ''}`);</span>
     });
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1478,8 +1480,8 @@ async function <span class="fstat-no" title="function not covered" >memoryStats(
 <span class="cstat-no" title="statement not covered" >    console.log('By Type:', JSON.stringify(stats.memories.byType));</span>
 <span class="cstat-no" title="statement not covered" >    console.log('Top Accessed:', stats.memories.topAccessed?.map(<span class="fstat-no" title="function not covered" >m </span>=&gt; <span class="cstat-no" title="statement not covered" >`(${m.access_count}x) ${m.content.slice(0, 40)}`)</span>.join(', '));</span>
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1498,31 +1500,31 @@ async function <span class="fstat-no" title="function not covered" >listExchange
 <span class="cstat-no" title="statement not covered" >      console.log(`    Intent: ${e.intent || 'none'} | Priority: ${e.priority}`);</span>
     });
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >createExchange(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  console.log('\n CREATE EXCHANGE');</span>
 <span class="cstat-no" title="statement not covered" >  console.log('─'.repeat(40));</span>
 <span class="cstat-no" title="statement not covered" >  console.log('Types: task, clarification, decision, feedback, planning, review');</span>
-  
+&nbsp;
   const exchangeType = <span class="cstat-no" title="statement not covered" >await prompt('Type: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!exchangeType) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const subject = <span class="cstat-no" title="statement not covered" >await prompt('Subject: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!subject) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const content = <span class="cstat-no" title="statement not covered" >await prompt('Content: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!content) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const intent = <span class="cstat-no" title="statement not covered" >await prompt('Intent (what do you want?): ');</span>
   const impact = <span class="cstat-no" title="statement not covered" >await prompt('Impact (why does it matter?): ');</span>
   const priority = <span class="cstat-no" title="statement not covered" >await prompt('Priority (low/normal/high/urgent, default: normal): ') || 'normal';</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const exchange = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', '/api/bridge/message', {</span>
       exchangeType,
@@ -1533,8 +1535,8 @@ async function <span class="fstat-no" title="function not covered" >createExchan
       priority
     });
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Exchange created: #${exchange.id}\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1543,7 +1545,7 @@ async function <span class="fstat-no" title="function not covered" >getExchange(
     const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
 <span class="cstat-no" title="statement not covered" >    id = await prompt('Exchange ID: ');</span>
   }
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const exchange = <span class="cstat-no" title="statement not covered" >await apiRequest('GET', `/api/bridge/exchange/${id}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('\n EXCHANGE');</span>
@@ -1556,37 +1558,37 @@ async function <span class="fstat-no" title="function not covered" >getExchange(
 <span class="cstat-no" title="statement not covered" >    console.log(`Intent:  ${exchange.intent}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`Impact:  ${exchange.impact}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >respondToExchange(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
   const id = <span class="cstat-no" title="statement not covered" >await prompt('Exchange ID: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!id) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const response = <span class="cstat-no" title="statement not covered" >await prompt('Response: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!response) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const exchange = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', `/api/bridge/exchange/${id}/respond`, { response });</span>
+    const _exchange = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', `/api/bridge/exchange/${id}/respond`, { response });</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Response sent to exchange #${id}\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >closeExchange(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
   const id = <span class="cstat-no" title="statement not covered" >await prompt('Exchange ID to close: ');</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    await apiRequest('POST', `/api/bridge/exchange/${id}/close`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Exchange #${id} closed\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1599,8 +1601,8 @@ async function <span class="fstat-no" title="function not covered" >bridgeStats(
 <span class="cstat-no" title="statement not covered" >    console.log('By Status:', JSON.stringify(stats.exchanges.byStatus));</span>
 <span class="cstat-no" title="statement not covered" >    console.log('By Type:', JSON.stringify(stats.exchanges.byType));</span>
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1609,29 +1611,29 @@ async function <span class="fstat-no" title="function not covered" >getContext(<
     const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
 <span class="cstat-no" title="statement not covered" >    key = await prompt('Context key: ');</span>
   }
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
     const ctx = <span class="cstat-no" title="statement not covered" >await apiRequest('GET', `/api/context/${encodeURIComponent(key)}`);</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`\n${key} = ${JSON.stringify(ctx.value)}\n`);</span>
-  } catch (err) {
+  } catch {
 <span class="cstat-no" title="statement not covered" >    console.error('Error: Context not found');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >setContext(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
   const key = <span class="cstat-no" title="statement not covered" >await prompt('Key: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!key) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
   const value = <span class="cstat-no" title="statement not covered" >await prompt('Value: ');</span>
 <span class="cstat-no" title="statement not covered" >  if (!value) { <span class="cstat-no" title="statement not covered" >console.log('Cancelled.\n'); <span class="cstat-no" title="statement not covered" ></span>return; </span>}</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  try {</span>
-    const ctx = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', '/api/context', { key, value });</span>
+    const _ctx = <span class="cstat-no" title="statement not covered" >await apiRequest('POST', '/api/context', { key, value });</span>
 <span class="cstat-no" title="statement not covered" >    console.log(`\n✓ Context set: ${key} = ${value}\n`);</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
@@ -1648,17 +1650,17 @@ async function <span class="fstat-no" title="function not covered" >getAllContex
 <span class="cstat-no" title="statement not covered" >      console.log(`${c.key} = ${JSON.stringify(c.value)}`);</span>
     });
 <span class="cstat-no" title="statement not covered" >    console.log('');</span>
-  } catch (err) {
-<span class="cstat-no" title="statement not covered" >    console.error('Error:', err.message);</span>
+  } catch {
+<span class="cstat-no" title="statement not covered" >    console.error('Error: Context operation failed');</span>
   }
 }
 &nbsp;
 async function <span class="fstat-no" title="function not covered" >switchMode(</span>) {
   const prompt = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(q</span>) =&gt; <span class="cstat-no" title="statement not covered" >new Promise(<span class="fstat-no" title="function not covered" >re</span>s =&gt; <span class="cstat-no" title="statement not covered" >rl.question(q, res))</span>;</span></span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  console.log('\nAvailable modes: tasks, memory, bridge, context');</span>
   const mode = <span class="cstat-no" title="statement not covered" >await prompt('Mode: ');</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  if (MODES[mode]) {</span>
 <span class="cstat-no" title="statement not covered" >    currentMode = mode;</span>
 <span class="cstat-no" title="statement not covered" >    rl.setPrompt(MODES[mode].prompt);</span>
@@ -1699,34 +1701,35 @@ Type 'help' for commands or 'mode' to switch modes.
 &nbsp;
 <span class="cstat-no" title="statement not covered" >rl.on('line', <span class="fstat-no" title="function not covered" >as</span>ync (line) =&gt; {</span>
   const input = <span class="cstat-no" title="statement not covered" >line.trim();</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!input) {</span>
 <span class="cstat-no" title="statement not covered" >    rl.prompt();</span>
 <span class="cstat-no" title="statement not covered" >    return;</span>
   }
-  
+&nbsp;
   const [cmd, ...args] = <span class="cstat-no" title="statement not covered" >input.split(' ');</span>
   const mode = <span class="cstat-no" title="statement not covered" >MODES[currentMode];</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  if (mode.commands[cmd]) {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      await mode.commands[cmd].action(args.join(' '));</span>
-    } catch (err) {
-<span class="cstat-no" title="statement not covered" >      console.error('Error:', err.message);</span>
+    } catch {
+<span class="cstat-no" title="statement not covered" >      console.error('Error: Context operation failed');</span>
     }
   } else {
 <span class="cstat-no" title="statement not covered" >    console.log(`Unknown command: ${cmd}. Type 'help' for commands.`);</span>
   }
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  rl.prompt();</span>
-});</pre></td></tr></table></pre>
+});
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-15T03:42:46.915Z
+                at 2026-05-16T21:04:04.620Z
             </div>
         <script src="prettify.js"></script>
         <script>

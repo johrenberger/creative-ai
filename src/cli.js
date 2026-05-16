@@ -83,7 +83,7 @@ function apiRequest(method, path, data = null) {
       method,
       headers: { 'Content-Type': 'application/json' }
     };
-    
+
     const req = http.request(url, options, (res) => {
       let body = '';
       res.on('data', chunk => body += chunk);
@@ -95,9 +95,9 @@ function apiRequest(method, path, data = null) {
         }
       });
     });
-    
+
     req.on('error', reject);
-    
+
     if (data) {
       req.write(JSON.stringify(data));
     }
@@ -120,25 +120,25 @@ async function listTasks() {
       console.log(`    Priority: ${t.priority} | Urgency: ${t.urgency} | Project: ${t.project}`);
     });
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function addTask() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   console.log('\n ADD TASK');
   console.log('─'.repeat(40));
-  
+
   const title = await prompt('Title: ');
   if (!title) { console.log('Cancelled.\n'); return; }
-  
+
   const description = await prompt('Description (optional): ');
   const project = await prompt('Project (default: general): ') || 'general';
   const priority = await prompt('Priority 1-10 (default: 5): ') || '5';
   const urgency = await prompt('Urgency 1-10 (default: 5): ') || '5';
-  
+
   try {
     const task = await apiRequest('POST', '/api/tasks', {
       title,
@@ -148,8 +148,8 @@ async function addTask() {
       urgency: parseInt(urgency)
     });
     console.log(`\n✓ Task created: #${task.id}\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -158,7 +158,7 @@ async function getTask(id) {
     const prompt = (q) => new Promise(res => rl.question(q, res));
     id = await prompt('Task ID: ');
   }
-  
+
   try {
     const task = await apiRequest('GET', `/api/tasks/${id}`);
     console.log('\n TASK');
@@ -171,37 +171,37 @@ async function getTask(id) {
     console.log(`Tags:     ${task.tags?.join(', ') || 'none'}`);
     console.log(`Created:  ${task.created_at}`);
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function updateTask() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   const id = await prompt('Task ID: ');
   if (!id) { console.log('Cancelled.\n'); return; }
-  
+
   const status = await prompt('New status (pending/in_progress/blocked/done/cancelled): ');
   if (!status) { console.log('Cancelled.\n'); return; }
-  
+
   try {
-    const task = await apiRequest('PATCH', `/api/tasks/${id}`, { status });
+    const _task = await apiRequest('PATCH', `/api/tasks/${id}`, { status });
     console.log(`\n✓ Task #${id} updated to "${status}"\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function deleteTask() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
   const id = await prompt('Task ID to delete: ');
-  
+
   try {
     await apiRequest('DELETE', `/api/tasks/${id}`);
     console.log(`\n✓ Task #${id} deleted\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -214,8 +214,8 @@ async function taskStats() {
     console.log('By Status:', JSON.stringify(stats.tasks.byStatus));
     console.log('By Project:', JSON.stringify(stats.tasks.byProject));
     console.log(`High Urgency: ${stats.tasks.pendingHighUrgency}\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -228,8 +228,8 @@ async function showStats() {
     console.log('\n MEMORIES:', stats.memories.total, stats.memories.byType);
     console.log('\n EXCHANGES:', stats.exchanges.total, 'open:', stats.exchanges.open);
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -238,7 +238,7 @@ async function searchMemory(query) {
     const prompt = (q) => new Promise(res => rl.question(q, res));
     query = await prompt('Search query: ');
   }
-  
+
   try {
     const results = await apiRequest('GET', `/api/memory/search?q=${encodeURIComponent(query)}`);
     if (results.length === 0) {
@@ -252,23 +252,23 @@ async function searchMemory(query) {
       console.log(`  Tags: ${m.tags?.join(', ') || 'none'} | Accessed: ${m.access_count}x`);
     });
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function addMemory() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   console.log('\n ADD MEMORY');
   console.log('─'.repeat(40));
-  
+
   const content = await prompt('Content: ');
   if (!content) { console.log('Cancelled.\n'); return; }
-  
+
   const type = await prompt('Type (note/decision/preference/pattern/learning/fact, default: note): ') || 'note';
   const tags = await prompt('Tags (comma-separated): ') || '';
-  
+
   try {
     const mem = await apiRequest('POST', '/api/memory', {
       content,
@@ -277,8 +277,8 @@ async function addMemory() {
       source: 'cli'
     });
     console.log(`\n✓ Memory stored: #${mem.id}\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -295,8 +295,8 @@ async function recentMemories() {
       console.log(`[${m.type}] ${m.content.slice(0, 80)}${m.content.length > 80 ? '...' : ''}`);
     });
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -309,8 +309,8 @@ async function memoryStats() {
     console.log('By Type:', JSON.stringify(stats.memories.byType));
     console.log('Top Accessed:', stats.memories.topAccessed?.map(m => `(${m.access_count}x) ${m.content.slice(0, 40)}`).join(', '));
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -329,31 +329,31 @@ async function listExchanges() {
       console.log(`    Intent: ${e.intent || 'none'} | Priority: ${e.priority}`);
     });
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function createExchange() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   console.log('\n CREATE EXCHANGE');
   console.log('─'.repeat(40));
   console.log('Types: task, clarification, decision, feedback, planning, review');
-  
+
   const exchangeType = await prompt('Type: ');
   if (!exchangeType) { console.log('Cancelled.\n'); return; }
-  
+
   const subject = await prompt('Subject: ');
   if (!subject) { console.log('Cancelled.\n'); return; }
-  
+
   const content = await prompt('Content: ');
   if (!content) { console.log('Cancelled.\n'); return; }
-  
+
   const intent = await prompt('Intent (what do you want?): ');
   const impact = await prompt('Impact (why does it matter?): ');
   const priority = await prompt('Priority (low/normal/high/urgent, default: normal): ') || 'normal';
-  
+
   try {
     const exchange = await apiRequest('POST', '/api/bridge/message', {
       exchangeType,
@@ -364,8 +364,8 @@ async function createExchange() {
       priority
     });
     console.log(`\n✓ Exchange created: #${exchange.id}\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -374,7 +374,7 @@ async function getExchange(id) {
     const prompt = (q) => new Promise(res => rl.question(q, res));
     id = await prompt('Exchange ID: ');
   }
-  
+
   try {
     const exchange = await apiRequest('GET', `/api/bridge/exchange/${id}`);
     console.log('\n EXCHANGE');
@@ -387,37 +387,37 @@ async function getExchange(id) {
     console.log(`Intent:  ${exchange.intent}`);
     console.log(`Impact:  ${exchange.impact}`);
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function respondToExchange() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   const id = await prompt('Exchange ID: ');
   if (!id) { console.log('Cancelled.\n'); return; }
-  
+
   const response = await prompt('Response: ');
   if (!response) { console.log('Cancelled.\n'); return; }
-  
+
   try {
-    const exchange = await apiRequest('POST', `/api/bridge/exchange/${id}/respond`, { response });
+    const _exchange = await apiRequest('POST', `/api/bridge/exchange/${id}/respond`, { response });
     console.log(`\n✓ Response sent to exchange #${id}\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function closeExchange() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
   const id = await prompt('Exchange ID to close: ');
-  
+
   try {
     await apiRequest('POST', `/api/bridge/exchange/${id}/close`);
     console.log(`\n✓ Exchange #${id} closed\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -430,8 +430,8 @@ async function bridgeStats() {
     console.log('By Status:', JSON.stringify(stats.exchanges.byStatus));
     console.log('By Type:', JSON.stringify(stats.exchanges.byType));
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -440,29 +440,29 @@ async function getContext(key) {
     const prompt = (q) => new Promise(res => rl.question(q, res));
     key = await prompt('Context key: ');
   }
-  
+
   try {
     const ctx = await apiRequest('GET', `/api/context/${encodeURIComponent(key)}`);
     console.log(`\n${key} = ${JSON.stringify(ctx.value)}\n`);
-  } catch (err) {
+  } catch {
     console.error('Error: Context not found');
   }
 }
 
 async function setContext() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   const key = await prompt('Key: ');
   if (!key) { console.log('Cancelled.\n'); return; }
-  
+
   const value = await prompt('Value: ');
   if (!value) { console.log('Cancelled.\n'); return; }
-  
+
   try {
-    const ctx = await apiRequest('POST', '/api/context', { key, value });
+    const _ctx = await apiRequest('POST', '/api/context', { key, value });
     console.log(`\n✓ Context set: ${key} = ${value}\n`);
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
@@ -479,17 +479,17 @@ async function getAllContext() {
       console.log(`${c.key} = ${JSON.stringify(c.value)}`);
     });
     console.log('');
-  } catch (err) {
-    console.error('Error:', err.message);
+  } catch {
+    console.error('Error: Context operation failed');
   }
 }
 
 async function switchMode() {
   const prompt = (q) => new Promise(res => rl.question(q, res));
-  
+
   console.log('\nAvailable modes: tasks, memory, bridge, context');
   const mode = await prompt('Mode: ');
-  
+
   if (MODES[mode]) {
     currentMode = mode;
     rl.setPrompt(MODES[mode].prompt);
@@ -530,24 +530,24 @@ rl.prompt();
 
 rl.on('line', async (line) => {
   const input = line.trim();
-  
+
   if (!input) {
     rl.prompt();
     return;
   }
-  
+
   const [cmd, ...args] = input.split(' ');
   const mode = MODES[currentMode];
-  
+
   if (mode.commands[cmd]) {
     try {
       await mode.commands[cmd].action(args.join(' '));
-    } catch (err) {
-      console.error('Error:', err.message);
+    } catch {
+      console.error('Error: Context operation failed');
     }
   } else {
     console.log(`Unknown command: ${cmd}. Type 'help' for commands.`);
   }
-  
+
   rl.prompt();
 });

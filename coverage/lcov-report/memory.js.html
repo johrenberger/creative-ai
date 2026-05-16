@@ -196,7 +196,8 @@
 <a name='L131'></a><a href='#L131'>131</a>
 <a name='L132'></a><a href='#L132'>132</a>
 <a name='L133'></a><a href='#L133'>133</a>
-<a name='L134'></a><a href='#L134'>134</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L134'></a><a href='#L134'>134</a>
+<a name='L135'></a><a href='#L135'>135</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -324,6 +325,7 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -338,14 +340,14 @@ import { getDb } from './db.js';
 &nbsp;
 export function storeMemory({ content, type = 'note', tags = [], project = 'global', confidence = 0.8, source = 'interaction' }) {
   const database = getDb();
-  
+&nbsp;
   const stmt = database.prepare(`
     INSERT INTO memories (content, type, tags, project, confidence, source)
     VALUES (?, ?, ?, ?, ?, ?)
   `);
-  
+&nbsp;
   const result = stmt.run(content, type, JSON.stringify(tags), project, confidence, source);
-  
+&nbsp;
   return {
     id: result.lastInsertRowid,
     content,
@@ -360,32 +362,32 @@ export function storeMemory({ content, type = 'note', tags = [], project = 'glob
   };
 }
 &nbsp;
-export function searchMemories(query, { type, tags, project, limit = 20 } = {}) {
+export function searchMemories(query, { type, _tags, project, _limit = 20 } = {}) {
   const database = getDb();
-  
+&nbsp;
   let sql = 'SELECT * FROM memories WHERE 1=1';
   const params = [];
-  
+&nbsp;
   if (query) {
     sql += ' AND content LIKE ?';
     params.push(`%${query}%`);
   }
-  
+&nbsp;
   if (type) {
     sql += ' AND type = ?';
     params.push(type);
   }
-  
+&nbsp;
   if (project) {
     sql += ' AND (project = ? OR project = "global")';
     params.push(project);
   }
-  
+&nbsp;
   sql += ' ORDER BY access_count DESC, created_at DESC LIMIT ?';
-  params.push(limit);
-  
+  params.push(_limit);
+&nbsp;
   const rows = database.prepare(sql).all(...params);
-  
+&nbsp;
   return rows.map(row =&gt; ({
     ...row,
     tags: JSON.parse(row.tags || <span class="branch-1 cbranch-no" title="branch not covered" >'[]')</span>
@@ -394,14 +396,14 @@ export function searchMemories(query, { type, tags, project, limit = 20 } = {}) 
 &nbsp;
 export function getMemory(id) {
   const database = getDb();
-  
+&nbsp;
   // Increment access count
   database.prepare('UPDATE memories SET access_count = access_count + 1, accessed_at = CURRENT_TIMESTAMP WHERE id = ?').run(id);
-  
+&nbsp;
   const row = database.prepare('SELECT * FROM memories WHERE id = ?').get(id);
-  
+&nbsp;
   if (!row) return null;
-  
+&nbsp;
   return {
     ...row,
     tags: JSON.parse(row.tags || <span class="branch-1 cbranch-no" title="branch not covered" >'[]')</span>
@@ -411,24 +413,24 @@ export function getMemory(id) {
 export function updateMemory(id, updates) {
   const database = getDb();
   const allowedFields = ['content', 'type', 'tags', 'project', 'confidence'];
-  
+&nbsp;
   const fields = [];
   const values = [];
-  
+&nbsp;
   for (const [key, value] of Object.entries(updates)) {
     if (allowedFields.includes(key)) {
       fields.push(`${key} = ?`);
       values.push(key === 'tags' ? <span class="branch-0 cbranch-no" title="branch not covered" >JSON.stringify(value) </span>: value);
     }
   }
-  
+&nbsp;
   if (fields.length === 0) return null;
-  
+&nbsp;
   values.push(id);
-  
+&nbsp;
   const stmt = database.prepare(`UPDATE memories SET ${fields.join(', ')} WHERE id = ?`);
   const result = stmt.run(...values);
-  
+&nbsp;
   return result.changes &gt; 0 ? getMemory(id) : null;
 }
 &nbsp;
@@ -440,11 +442,11 @@ export function deleteMemory(id) {
 &nbsp;
 export function getMemoryStats() {
   const database = getDb();
-  
+&nbsp;
   const total = database.prepare('SELECT COUNT(*) as count FROM memories').get().count;
   const byType = database.prepare('SELECT type, COUNT(*) as count FROM memories GROUP BY type').all();
   const topAccessed = database.prepare('SELECT id, content, access_count FROM memories ORDER BY access_count DESC LIMIT 5').all();
-  
+&nbsp;
   return {
     total,
     byType: Object.fromEntries(byType.map(r =&gt; [r.type, r.count])),
@@ -455,21 +457,22 @@ export function getMemoryStats() {
 export function getRecentMemories(limit = <span class="branch-0 cbranch-no" title="branch not covered" >10)</span> {
   const database = getDb();
   const rows = database.prepare('SELECT * FROM memories ORDER BY created_at DESC LIMIT ?').all(limit);
-  
+&nbsp;
   return rows.map(row =&gt; ({
     ...row,
     tags: JSON.parse(row.tags || <span class="branch-1 cbranch-no" title="branch not covered" >'[]')</span>
   }));
 }
 &nbsp;
-export default { storeMemory, searchMemories, getMemory, updateMemory, deleteMemory, getMemoryStats, getRecentMemories };</pre></td></tr></table></pre>
+export default { storeMemory, searchMemories, getMemory, updateMemory, deleteMemory, getMemoryStats, getRecentMemories };
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-15T03:42:46.915Z
+                at 2026-05-16T21:04:04.620Z
             </div>
         <script src="prettify.js"></script>
         <script>

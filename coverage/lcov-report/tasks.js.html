@@ -202,7 +202,8 @@
 <a name='L137'></a><a href='#L137'>137</a>
 <a name='L138'></a><a href='#L138'>138</a>
 <a name='L139'></a><a href='#L139'>139</a>
-<a name='L140'></a><a href='#L140'>140</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -341,6 +342,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Tasks Module
  * Structured task management with priority/urgency scoring
@@ -356,14 +358,14 @@ function calculatePriorityScore(priority, urgency) {
 &nbsp;
 export function createTask({ title, description = '', priority = 5, urgency = 5, project = 'general', tags = [], createdBy = 'justin' }) {
   const database = getDb();
-  
+&nbsp;
   const stmt = database.prepare(`
     INSERT INTO tasks (title, description, priority, urgency, project, tags, created_by)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
-  
+&nbsp;
   const result = stmt.run(title, description, priority, urgency, project, JSON.stringify(tags), createdBy);
-  
+&nbsp;
   return {
     id: result.lastInsertRowid,
     title,
@@ -380,33 +382,33 @@ export function createTask({ title, description = '', priority = 5, urgency = 5,
 &nbsp;
 export function getTasks({ status, project, assignedTo, limit = 50 } = {}) {
   const database = getDb();
-  
+&nbsp;
   let query = `
     SELECT *, ((11 - urgency) * 2 + (11 - priority)) as score
     FROM tasks WHERE 1=1
   `;
   const params = [];
-  
+&nbsp;
   if (status) {
     query += ' AND status = ?';
     params.push(status);
   }
-  
+&nbsp;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (project) {
 <span class="cstat-no" title="statement not covered" >    query += ' AND project = ?';</span>
 <span class="cstat-no" title="statement not covered" >    params.push(project);</span>
   }
-  
+&nbsp;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (assignedTo) {
 <span class="cstat-no" title="statement not covered" >    query += ' AND assigned_to = ?';</span>
 <span class="cstat-no" title="statement not covered" >    params.push(assignedTo);</span>
   }
-  
+&nbsp;
   query += ' ORDER BY score ASC LIMIT ?';
   params.push(limit);
-  
+&nbsp;
   const rows = database.prepare(query).all(...params);
-  
+&nbsp;
   return rows.map(row =&gt; ({
     ...row,
     tags: JSON.parse(row.tags || <span class="branch-1 cbranch-no" title="branch not covered" >'[]')</span>,
@@ -417,9 +419,9 @@ export function getTasks({ status, project, assignedTo, limit = 50 } = {}) {
 export function getTask(id) {
   const database = getDb();
   const row = database.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
-  
+&nbsp;
   if (!row) return null;
-  
+&nbsp;
   return {
     ...row,
     tags: JSON.parse(row.tags || <span class="branch-1 cbranch-no" title="branch not covered" >'[]')</span>,
@@ -430,10 +432,10 @@ export function getTask(id) {
 export function updateTask(id, updates) {
   const database = getDb();
   const allowedFields = ['title', 'description', 'status', 'priority', 'urgency', 'project', 'tags', 'assigned_to'];
-  
+&nbsp;
   const fields = [];
   const values = [];
-  
+&nbsp;
   for (const [key, value] of Object.entries(updates)) {
     const dbKey = key === 'assignedTo' ? <span class="branch-0 cbranch-no" title="branch not covered" >'assigned_to' </span>: key === 'tags' ? <span class="branch-0 cbranch-no" title="branch not covered" >'tags' </span>: key;
     <span class="missing-if-branch" title="else path not taken" >E</span>if (allowedFields.includes(dbKey)) {
@@ -441,20 +443,20 @@ export function updateTask(id, updates) {
       values.push(dbKey === 'tags' ? <span class="branch-0 cbranch-no" title="branch not covered" >JSON.stringify(value) </span>: value);
     }
   }
-  
+&nbsp;
   <span class="missing-if-branch" title="if path not taken" >I</span>if (fields.length === 0) <span class="cstat-no" title="statement not covered" >return null;</span>
-  
+&nbsp;
   fields.push('updated_at = CURRENT_TIMESTAMP');
-  
+&nbsp;
   <span class="missing-if-branch" title="else path not taken" >E</span>if (updates.status === 'done') {
     fields.push('completed_at = CURRENT_TIMESTAMP');
   }
-  
+&nbsp;
   values.push(id);
-  
+&nbsp;
   const stmt = database.prepare(`UPDATE tasks SET ${fields.join(', ')} WHERE id = ?`);
   const result = stmt.run(...values);
-  
+&nbsp;
   return result.changes &gt; 0 ? getTask(id) : null;
 }
 &nbsp;
@@ -466,12 +468,12 @@ export function deleteTask(id) {
 &nbsp;
 export function getTaskStats() {
   const database = getDb();
-  
+&nbsp;
   const total = database.prepare('SELECT COUNT(*) as count FROM tasks').get().count;
   const byStatus = database.prepare('SELECT status, COUNT(*) as count FROM tasks GROUP BY status').all();
   const byProject = database.prepare('SELECT project, COUNT(*) as count FROM tasks GROUP BY project').all();
   const pendingHighUrgency = database.prepare("SELECT COUNT(*) as count FROM tasks WHERE status = 'pending' AND urgency &gt;= 8").get().count;
-  
+&nbsp;
   return {
     total,
     byStatus: Object.fromEntries(byStatus.map(r =&gt; [r.status, r.count])),
@@ -480,14 +482,15 @@ export function getTaskStats() {
   };
 }
 &nbsp;
-export default { createTask, getTasks, getTask, updateTask, deleteTask, getTaskStats };</pre></td></tr></table></pre>
+export default { createTask, getTasks, getTask, updateTask, deleteTask, getTaskStats };
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-15T03:42:46.915Z
+                at 2026-05-16T21:04:04.620Z
             </div>
         <script src="prettify.js"></script>
         <script>

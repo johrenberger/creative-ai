@@ -171,7 +171,8 @@
 <a name='L106'></a><a href='#L106'>106</a>
 <a name='L107'></a><a href='#L107'>107</a>
 <a name='L108'></a><a href='#L108'>108</a>
-<a name='L109'></a><a href='#L109'>109</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L109'></a><a href='#L109'>109</a>
+<a name='L110'></a><a href='#L110'>110</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -279,6 +280,7 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">/**
  * Context Module
  * Project state and context management
@@ -288,10 +290,10 @@ import { getDb } from './db.js';
 &nbsp;
 export function setContext(key, value, type = 'string', project = 'global', updatedBy = 'system') {
   const database = getDb();
-  
+&nbsp;
   const dbType = type === 'object' ? <span class="branch-0 cbranch-no" title="branch not covered" >'json' </span>: type;
   const dbValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-  
+&nbsp;
   const stmt = database.prepare(`
     INSERT INTO context (key, value, type, project, updated_by)
     VALUES (?, ?, ?, ?, ?)
@@ -302,18 +304,18 @@ export function setContext(key, value, type = 'string', project = 'global', upda
       updated_by = excluded.updated_by,
       updated_at = CURRENT_TIMESTAMP
   `);
-  
+&nbsp;
   stmt.run(key, dbValue, dbType, project, updatedBy);
-  
+&nbsp;
   return getContext(key);
 }
 &nbsp;
 export function getContext(key) {
   const database = getDb();
   const row = database.prepare('SELECT * FROM context WHERE key = ?').get(key);
-  
+&nbsp;
   if (!row) return null;
-  
+&nbsp;
   return {
     ...row,
     value: row.type === 'json' ? JSON.parse(row.value) : row.value
@@ -322,19 +324,19 @@ export function getContext(key) {
 &nbsp;
 export function getAllContext(project = null) {
   const database = getDb();
-  
+&nbsp;
   let query = 'SELECT * FROM context';
   const params = [];
-  
+&nbsp;
   if (project) {
     query += ' WHERE project = ? OR project = \'global\'';
     params.push(project);
   }
-  
+&nbsp;
   query += ' ORDER BY key ASC';
-  
+&nbsp;
   const rows = database.prepare(query).all(...params);
-  
+&nbsp;
   return rows.map(row =&gt; ({
     ...row,
     value: row.type === 'json' ? <span class="branch-0 cbranch-no" title="branch not covered" >JSON.parse(row.value) </span>: row.value
@@ -347,14 +349,14 @@ export function deleteContext(key) {
   return result.changes &gt; 0;
 }
 &nbsp;
-export function <span class="fstat-no" title="function not covered" >getContextHistory(</span>key, limit = <span class="branch-0 cbranch-no" title="branch not covered" >20)</span> {
+export function <span class="fstat-no" title="function not covered" >getContextHistory(</span>key, _limit = <span class="branch-0 cbranch-no" title="branch not covered" >20)</span> {
   // Note: We're using a simple approach here since SQLite doesn't have native change tracking
   // In production, consider using audit tables or WAL snapshots
   const database = <span class="cstat-no" title="statement not covered" >getDb();</span>
   const row = <span class="cstat-no" title="statement not covered" >database.prepare('SELECT * FROM context WHERE key = ?').get(key);</span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  if (!row) <span class="cstat-no" title="statement not covered" >return [];</span></span>
-  
+&nbsp;
 <span class="cstat-no" title="statement not covered" >  return [{</span>
     ...row,
     value: row.type === 'json' ? JSON.parse(row.value) : row.value,
@@ -364,13 +366,13 @@ export function <span class="fstat-no" title="function not covered" >getContextH
 &nbsp;
 export function setPreference(key, value) {
   const database = getDb();
-  
+&nbsp;
   const stmt = database.prepare(`
     INSERT INTO preferences (key, value)
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP
   `);
-  
+&nbsp;
   stmt.run(key, value);
   return getPreference(key);
 }
@@ -387,14 +389,15 @@ export function getAllPreferences() {
   return Object.fromEntries(rows.map(r =&gt; [r.key, r.value]));
 }
 &nbsp;
-export default { setContext, getContext, getAllContext, deleteContext, getContextHistory, setPreference, getPreference, getAllPreferences };</pre></td></tr></table></pre>
+export default { setContext, getContext, getAllContext, deleteContext, getContextHistory, setPreference, getPreference, getAllPreferences };
+&nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-05-15T03:42:46.915Z
+                at 2026-05-16T21:04:04.620Z
             </div>
         <script src="prettify.js"></script>
         <script>
