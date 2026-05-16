@@ -29,8 +29,23 @@ const server = createServer(app);
 
 // Security middleware
 app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https://cti.clawdexter.tech'],
+      connectSrc: ["'self'", 'wss:', 'https://cti.clawdexter.tech'],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: []
+    }
+  },
+  crossOriginEmbedderPolicy: false,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xFrameOptions: 'DENY',
+  xContentTypeOptions: 'nosniff',
+  strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true }
 }));
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
@@ -395,7 +410,7 @@ app.post('/api/preferences', (req, res) => {
 const WEBHOOK_SECRET = process.env.CTI_WEBHOOK_SECRET || '';
 
 function verifyWebhookSignature(req) {
-  if (!WEBHOOK_SECRET) return true; // Secret not configured, skip verification
+  if (!WEBHOOK_SECRET) return false; // Secret required — no bypass
   const sig = req.headers['x-hub-signature-256'];
   if (!sig) return false;
   const hmac = createHmac('sha256', WEBHOOK_SECRET);
@@ -418,13 +433,38 @@ app.get('/img', async (req, res) => {
     return res.status(400).json({ error: 'Disallowed protocol' });
   }
 
+  // Block private network targets (SSRF hardening)
+  const hostname = url.hostname.toLowerCase();
+  const isPrivate = [
+    hostname === 'localhost',
+    hostname.startsWith('127.'),
+    hostname.startsWith('10.'),
+    hostname.startsWith('172.16') || (hostname.startsWith('172.') && parseInt(hostname.split('.')[1]) >= 16 && parseInt(hostname.split('.')[1]) <= 31),
+    hostname.startsWith('192.168.'),
+    hostname === '0.0.0.0',
+    hostname === '[::1]',
+    hostname.endsWith('.local')
+  ].some(Boolean);
+
+  if (isPrivate) {
+    return res.status(403).json({ error: 'Forbidden: private network target' });
+  }
+
   try {
-    const r = await fetch(url.toString(), { timeout: 10000 });
+    const r = await fetch(url.toString(), {
+      headers: { 'User-Agent': 'CTI-ImageProxy/1.0' },
+      signal: AbortSignal.timeout(10000)
+    });
     if (!r.ok) return res.status(502).json({ error: 'Upstream error' });
 
     const contentType = r.headers.get('content-type') || 'image/jpeg';
+    if (!contentType.startsWith('image/')) {
+      return res.status(400).json({ error: 'Not an image' });
+    }
+
     res.set('Content-Type', contentType);
     res.set('Cache-Control', 'public, max-age=86400');
+    res.set('X-Content-Type-Options', 'nosniff');
     r.body.pipe(res);
   } catch (err) {
     res.status(502).json({ error: 'Fetch failed' });
