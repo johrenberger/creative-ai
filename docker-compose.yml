@@ -22,7 +22,10 @@ services:
       - "traefik.http.services.cti-webhook.loadbalancer.server.port=3456"
     networks:
       - familyplanning_default
+      - traefik-jsq2_default
 
 networks:
   familyplanning_default:
+    external: true
+  traefik-jsq2_default:
     external: true
