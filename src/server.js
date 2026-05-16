@@ -13,7 +13,6 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createHmac } from 'crypto';
-import { exec } from 'child_process';
 
 import { initializeDatabase, getSchemaStats, closeDatabase } from './db.js';
 import * as tasks from './tasks.js';
@@ -404,6 +403,33 @@ function verifyWebhookSignature(req) {
   const expected = `sha256=${hmac.digest('hex')}`;
   return sig === expected;
 }
+
+// ============ IMAGE PROXY (avoids mixed content warnings) ============
+
+app.get('/img', async (req, res) => {
+  let url;
+  try {
+    url = new URL(atob(req.query.url));
+  } catch {
+    return res.status(400).json({ error: 'Invalid URL' });
+  }
+
+  if (!['http:', 'https:'].includes(url.protocol)) {
+    return res.status(400).json({ error: 'Disallowed protocol' });
+  }
+
+  try {
+    const r = await fetch(url.toString(), { timeout: 10000 });
+    if (!r.ok) return res.status(502).json({ error: 'Upstream error' });
+
+    const contentType = r.headers.get('content-type') || 'image/jpeg';
+    res.set('Content-Type', contentType);
+    res.set('Cache-Control', 'public, max-age=86400');
+    r.body.pipe(res);
+  } catch (err) {
+    res.status(502).json({ error: 'Fetch failed' });
+  }
+});
 
 // ============ STATIC FILES ============
 
