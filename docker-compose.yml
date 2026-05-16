@@ -3,23 +3,30 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: cti
+
     environment:
-      - CTI_PORT=3456
-      - CTI_WEBHOOK_SECRET=${CTI_WEBHOOK_SECRET}
+      CTI_PORT: 3456
+      CTI_WEBHOOK_SECRET: ${CTI_WEBHOOK_SECRET}
+
+    restart: unless-stopped
+
     networks:
       - traefik-jsq2_default
+
     labels:
-      - traefik.enable=true
-      - traefik.docker.network=traefik-jsq2_default
+      traefik.enable: "true"
 
-      - traefik.http.routers.cti.rule=Host(`cti.clawdexter.tech`)
-      - traefik.http.routers.cti.entrypoints=websecure
-      - traefik.http.routers.cti.tls.certresolver=letsencrypt
-      - traefik.http.routers.cti.service=cti
+      traefik.docker.network: "traefik-jsq2_default"
 
-      - traefik.http.services.cti.loadbalancer.server.port=3456
-    restart: unless-stopped
+      traefik.http.routers.cti.rule: "Host(`cti.clawdexter.tech`)"
+      traefik.http.routers.cti.entrypoints: "websecure"
+      traefik.http.routers.cti.tls.certresolver: "letsencrypt"
+
+      traefik.http.routers.cti.service: "cti"
+
+      traefik.http.services.cti.loadbalancer.server.port: "3456"
 
 networks:
   traefik-jsq2_default:
