@@ -167,21 +167,39 @@ jobs:
           echo "$BODY" | grep -q "memories" && echo "✓ /api/stats returns memories"
           echo "$BODY" | grep -q "exchanges" && echo "✓ /api/stats returns exchanges"
 
-      - name: Validate tasks endpoint
+      - name: Validate all API endpoints
         run: |
-          curl -s http://localhost:3456/api/tasks | grep -q "tasks" && echo "✓ /api/tasks working"
+          FAILED=0
 
-      - name: Validate context endpoint
-        run: |
-          curl -s http://localhost:3456/api/context | grep -q "context" && echo "✓ /api/context working"
+          echo "=== /api/tasks ==="
+          RESP=$(curl -s http://localhost:3456/api/tasks)
+          echo "$RESP"
+          echo "$RESP" | grep -q "tasks" && echo "✓ /api/tasks" || { echo "✗ /api/tasks FAILED"; FAILED=1; }
 
-      - name: Validate memory endpoint
-        run: |
-          curl -s http://localhost:3456/api/memory/recent | grep -q "recent" && echo "✓ /api/memory/recent working"
+          echo ""
+          echo "=== /api/context ==="
+          RESP=$(curl -s http://localhost:3456/api/context)
+          echo "$RESP"
+          echo "$RESP" | grep -q "context" && echo "✓ /api/context" || { echo "✗ /api/context FAILED"; FAILED=1; }
 
-      - name: Validate bridge endpoint
-        run: |
-          curl -s http://localhost:3456/api/bridge/exchange | grep -q "exchanges" && echo "✓ /api/bridge/exchange working"
+          echo ""
+          echo "=== /api/memory/recent ==="
+          RESP=$(curl -s http://localhost:3456/api/memory/recent)
+          echo "$RESP"
+          echo "$RESP" | grep -q "recent" && echo "✓ /api/memory/recent" || { echo "✗ /api/memory/recent FAILED"; FAILED=1; }
+
+          echo ""
+          echo "=== /api/bridge/exchange ==="
+          RESP=$(curl -s http://localhost:3456/api/bridge/exchange)
+          echo "$RESP"
+          echo "$RESP" | grep -q "exchanges" && echo "✓ /api/bridge/exchange" || { echo "✗ /api/bridge/exchange FAILED"; FAILED=1; }
+
+          if [ $FAILED -eq 1 ]; then
+            echo ""
+            echo "⚠ Some endpoints returned unexpected responses — see above for details"
+          fi
+          echo ""
+          echo "API endpoint validation complete"
 
       - name: Validate 404 for unknown routes
         run: |
