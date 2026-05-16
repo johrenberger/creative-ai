@@ -11,17 +11,15 @@ services:
       - traefik-jsq2_default
     labels:
       - traefik.enable=true
+      - traefik.docker.network=traefik-jsq2_default
+
       - traefik.http.routers.cti.rule=Host(`cti.clawdexter.tech`)
       - traefik.http.routers.cti.entrypoints=websecure
       - traefik.http.routers.cti.tls.certresolver=letsencrypt
+      - traefik.http.routers.cti.service=cti
+
       - traefik.http.services.cti.loadbalancer.server.port=3456
-      - traefik.http.routers.cti-webhook.rule=PathPrefix(`/webhook`)
-      - traefik.http.routers.cti-webhook.entrypoints=websecure
-      - traefik.http.routers.cti-webhook.tls.certresolver=letsencrypt
-      - traefik.http.services.cti-webhook.loadbalancer.server.port=3456
     restart: unless-stopped
-    ports:
-      - 3456:3456
 
 networks:
   traefik-jsq2_default:
