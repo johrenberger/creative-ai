@@ -41,29 +41,30 @@
 - `x-content-type-options: nosniff` header present → **Express/Helmet IS running**
 - All routes return 404 → **app is running but routing is broken**
 
-**Root Cause Analysis (updated 17:13 UTC)**
+**Latest commit:** `6286679` ("fix: add CTI_START_SERVER=true to Dockerfile so server listens in container")
+**Status:** ✅ COMPLETE — Auth fully implemented and verified in production
 
-1. **Port 3456 is CLOSED** on the VPS — no service listening
-2. **Port 8080 (Meal Plan app)** is open and running Express, but doesn't route `cti.clawdexter.tech`
-3. **Port 443 HTTPS** returns 404 for all paths — something OTHER than the CTI container is answering
-4. **No Traefik headers** in HTTPS response — suggests the request is NOT going through Traefik
-5. **No `X-Powered-By` or `Server` header** — the 404 handler is from something unusual
-6. **SSH access blocked** from this environment
-7. **Hostinger API returns 401** — I don't have the HOSTINGER_API_KEY in this environment (it's a GitHub Actions secret)
+---
 
-**Most likely scenario:** The Hostinger API call succeeds (✅ Deployment initiated) but the container either:
-- Fails to start due to missing `CTI_WEBHOOK_SECRET` or other env var
-- Starts but immediately crashes (exit code 0?)
-- Is started but the Hostinger platform's Traefik isn't routing to it correctly
-- The "Meal Plan" app's nginx is somehow intercepting port 443 requests instead of Traefik
+## ✅ Production Verification (17:45 UTC) — ALL PASSED
 
-**Immediate next step:** Manual SSH access to VPS is required for diagnosis.
+| Test | Endpoint | Expected | Got |
+|---|---|---|---|
+| 1. Health | `GET /health` | 200 + JSON | ✅ 200 |
+| 2. Stats | `GET /api/stats` | 200 + JSON | ✅ 200 |
+| 3. Root path | `GET /` | 200 + HTML | ✅ 200 |
+| 4. Register | `POST /api/auth/register` | 201 + user | ✅ 201 |
+| 5. Login | `POST /api/auth/login` | 200 + cookie | ✅ 200 |
+| 6. Session (auth) | `GET /api/auth/session` | authenticated:true | ✅ true |
+| 7. Protected (no auth) | `GET /api/tasks` | 401 | ✅ 401 |
+| 8. Protected (auth) | `GET /api/tasks` | task list | ✅ [] |
+| 9. Create task | `POST /api/tasks` | 201 + task | ✅ 201 |
+| 10. Logout | `POST /api/auth/logout` | success:true | ✅ true |
+| 11. After logout | `GET /api/auth/session` | authenticated:false | ✅ false |
 
-**Options to resolve:**
-1. Justin SSHs into the VPS and runs `docker ps`, `docker logs cti`, `docker compose logs`
-2. Justin checks Hostinger hPanel → Docker Manager → sees CTI container status
-3. Add SSH public key to VPS authorized_keys so I can access it
-4. Check if CTI_WEBHOOK_SECRET was set in the deployment environment variables
+**Root Cause:** `CTI_START_SERVER` env var was not set in Dockerfile, so `server.listen()` never executed in the container.
+
+**Fix:** Added `ENV CTI_START_SERVER=true` to `Dockerfile`. Container now starts, listens on port 3456, Traefik routes correctly.
 
 **What we know works in CI:**
 - E2E test inside Docker container `ghcr.io/johrenberger/creative-ai:f17757fd` → **200 OK on /health**
