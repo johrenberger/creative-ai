@@ -177,6 +177,7 @@ jobs:
             -p 3456:3456 \
             -e CTI_DB_PATH=/tmp/cti.db \
             -e CTI_WEBHOOK_SECRET=test-secret \
+            -e CTI_START_SERVER=true \
             cti-e2e:latest
 
       - name: Debug container startup
@@ -199,6 +200,7 @@ jobs:
 
       - name: Wait for container to be ready
         run: |
+          sleep 5
           for i in {1..60}; do
             if curl -sf http://127.0.0.1:3456/health > /dev/null 2>&1; then
               echo "Container is ready"
