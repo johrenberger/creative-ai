@@ -179,14 +179,32 @@ jobs:
             -e CTI_WEBHOOK_SECRET=test-secret \
             cti-e2e:latest
 
+      - name: Debug container startup
+        run: |
+          echo "=== Container status ==="
+          sleep 2
+          docker ps -a
+          echo ""
+          echo "=== Container logs ==="
+          docker logs cti-e2e 2>&1
+          echo ""
+          echo "=== Port check ==="
+          docker exec cti-e2e sh -c "netstat -tlnp 2>/dev/null || ss -tlnp 2>/dev/null || cat /proc/net/tcp 2>/dev/null" || true
+          echo ""
+          echo "=== Process check ==="
+          docker exec cti-e2e ps aux 2>&1 || true
+          echo ""
+          echo "=== Direct health test from inside container ==="
+          docker exec cti-e2e sh -c "node -e \"fetch('http://127.0.0.1:3456/health').then(r=>console.log('status:', r.status)).catch(e=>console.error('error:', e.message))\"" 2>&1 || true
+
       - name: Wait for container to be ready
         run: |
-          for i in {1..30}; do
-            if curl -sf http://localhost:3456/health > /dev/null 2>&1; then
+          for i in {1..60}; do
+            if curl -sf http://127.0.0.1:3456/health > /dev/null 2>&1; then
               echo "Container is ready"
               exit 0
             fi
-            echo "Waiting for container... ($i/30)"
+            echo "Waiting for container... ($i/60)"
             sleep 1
           done
           echo "Container failed to start"
