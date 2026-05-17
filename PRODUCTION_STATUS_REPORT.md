@@ -2,8 +2,14 @@
 **Project:** creative-ai (CTI — Creative AI Thinking Interface)
 **Author:** Clawdexter (OpenClaw agent)
 **Date:** 2026-05-17
-**Latest commit:** `f17757f` ("ci: force server listen in E2E container and add initial wait delay")
+**Latest commit:** `748adc7` ("docs: add production status report") — re-triggered deploy pipeline
 **Status:** 🟡 PARTIAL — CI/code fully complete; production app needs diagnosis
+
+**Update (17:02 UTC):** New deploy run `25997145374` completed ✅ (commit `748adc7`), but app still 404.
+
+**Update (17:03 UTC):** Confirmed port 3456 is REFUSED on VPS. Container is not running.
+
+**Update (17:09 UTC):** All 278 tests still passing locally.
 
 ---
 
@@ -35,11 +41,29 @@
 - `x-content-type-options: nosniff` header present → **Express/Helmet IS running**
 - All routes return 404 → **app is running but routing is broken**
 
-**Possible causes:**
-1. **Incorrect `docker-compose.yml` path in deployed image** — the image was built from `f17757fd` but may contain stale route registration
-2. **Hostinger deployment is running a different image** — the "deployment initiated" message may not mean the container is actually running the new image
-3. **Port mismatch** — if the container started correctly, something else might be proxying the requests
-4. **Route registration order** — static file middleware (`app.use(express.static)`) may be catching all requests before API routes are hit
+**Root Cause Analysis (updated 17:13 UTC)**
+
+1. **Port 3456 is CLOSED** on the VPS — no service listening
+2. **Port 8080 (Meal Plan app)** is open and running Express, but doesn't route `cti.clawdexter.tech`
+3. **Port 443 HTTPS** returns 404 for all paths — something OTHER than the CTI container is answering
+4. **No Traefik headers** in HTTPS response — suggests the request is NOT going through Traefik
+5. **No `X-Powered-By` or `Server` header** — the 404 handler is from something unusual
+6. **SSH access blocked** from this environment
+7. **Hostinger API returns 401** — I don't have the HOSTINGER_API_KEY in this environment (it's a GitHub Actions secret)
+
+**Most likely scenario:** The Hostinger API call succeeds (✅ Deployment initiated) but the container either:
+- Fails to start due to missing `CTI_WEBHOOK_SECRET` or other env var
+- Starts but immediately crashes (exit code 0?)
+- Is started but the Hostinger platform's Traefik isn't routing to it correctly
+- The "Meal Plan" app's nginx is somehow intercepting port 443 requests instead of Traefik
+
+**Immediate next step:** Manual SSH access to VPS is required for diagnosis.
+
+**Options to resolve:**
+1. Justin SSHs into the VPS and runs `docker ps`, `docker logs cti`, `docker compose logs`
+2. Justin checks Hostinger hPanel → Docker Manager → sees CTI container status
+3. Add SSH public key to VPS authorized_keys so I can access it
+4. Check if CTI_WEBHOOK_SECRET was set in the deployment environment variables
 
 **What we know works in CI:**
 - E2E test inside Docker container `ghcr.io/johrenberger/creative-ai:f17757fd` → **200 OK on /health**
@@ -158,3 +182,41 @@ All return `content-type: text/plain` with `x-content-type-options: nosniff` (He
 - **Domain:** `https://cti.clawdexter.tech`
 - **VPS:** `72.60.178.136` (port 22 SSH blocked from this environment)
 - **Hostinger VM ID:** `1600839`
+---
+
+## Diagnosis Summary (17:15 UTC)
+
+**The deployment pipeline is working correctly.** Every stage passes:
+- ✅ Code complete, lint-clean, all 278 tests pass
+- ✅ Docker image built (`748adc7`)
+- ✅ E2E tests pass inside Docker (same image that deployed)
+- ✅ Hostinger API call returns 200 "Deployment initiated successfully"
+- ✅ Two pipeline runs completed (commits `f17757f` and `748adc7`)
+
+**The app is not running.** Direct evidence:
+- `curl https://cti.clawdexter.tech/health` → HTTP 404
+- Port 3456 on VPS is **CLOSED** (connection refused)
+- Port 8080 (Meal Plan) and port 443 (something answering 404) are open
+
+**What I cannot determine without SSH:**
+1. Is the CTI container actually running on the VPS?
+2. Is it running but on a different port?
+3. Is it crashing on startup? (missing env var, bad image, etc.)
+4. What is answering on port 443 that returns 404?
+5. Is there a Hostinger-side networking misconfiguration?
+
+**What you can do right now (Justin):**
+1. **SSH into the VPS** (`ssh ubuntu@72.60.178.136`) and run:
+   - `docker ps -a` — see all containers
+   - `docker logs cti --tail 50` — see CTI container logs
+   - `docker compose -f /opt/creative-ai/docker-compose.yml logs` (or wherever it's stored)
+   - `ss -tlnp | grep 3456` — confirm nothing listening on 3456
+2. **Check Hostinger hPanel → Docker Manager** — see container status, logs, restart option
+3. **Check if `CTI_WEBHOOK_SECRET` was set** — if missing, the container might fail
+
+**If the container is not running**, the fix is likely:
+- `docker compose up -d` on the VPS
+- Or click "Restart" in Hostinger Docker Manager
+- Or re-trigger the GitHub Actions deployment
+
+**CI/CD is green. Production is down. SSH access needed.**
