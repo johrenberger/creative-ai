@@ -737,6 +737,7 @@
       }
       authLoaded = true;
       updateAuthUI();
+      if (!authUser) showLoginForm();
     }
 
     function updateAuthUI() {
@@ -800,6 +801,13 @@
         authUser = data;
         document.getElementById('loginPanel').innerHTML = '';
         updateAuthUI();
+        console.log('About to call connectWebSocket, ws=', ws);
+        try {
+          connectWebSocket();
+          console.log('After connectWebSocket call, ws=', ws);
+        } catch (e) {
+          console.log('connectWebSocket exception:', e.message);
+        }
         const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'dashboard';
         switchTab(activeTab);
       } catch (e) {
@@ -813,14 +821,20 @@
         await fetch(API + '/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
       } catch {}
       authUser = null;
+      if (ws) { ws.close(); ws = null; }
+      document.getElementById('wsIndicator').classList.remove('connected');
+      document.getElementById('wsStatus').textContent = 'Disconnected';
       updateAuthUI();
-      showLoginForm();
+      if (!authUser) showLoginForm();
     }
     
     // WebSocket
     function connectWebSocket() {
+      if (ws && ws.readyState === WebSocket.OPEN) return;
       const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-      ws = new WebSocket(`${protocol}//${location.host}/ws`);
+      const wsUrl = `${protocol}//${location.host}/ws`;
+      console.log('connectWebSocket: creating WS connection to', wsUrl);
+      ws = new WebSocket(wsUrl);
       
       ws.onopen = () => {
         document.getElementById('wsIndicator').classList.add('connected');
@@ -828,9 +842,17 @@
       };
       
       ws.onclose = () => {
+        console.log('WS onclose: fired, ws will be set to null');
         document.getElementById('wsIndicator').classList.remove('connected');
         document.getElementById('wsStatus').textContent = 'Disconnected';
+        ws = null;
+        console.log('WS onclose: ws is now null');
         setTimeout(connectWebSocket, 3000);
+      };
+
+      ws.onerror = () => {
+        document.getElementById('wsIndicator').classList.remove('connected');
+        document.getElementById('wsStatus').textContent = 'Disconnected';
       };
       
       ws.onmessage = (event) => {

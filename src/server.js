@@ -48,7 +48,11 @@ app.use(helmet({
   xFrameOptions: 'DENY',
   strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true }
 }));
-app.use(cors());
+const allowedOrigin = process.env.CORS_ORIGIN || 'https://cti.clawdexter.tech';
+app.use(cors({
+  origin: allowedOrigin,
+  credentials: true
+}));
 app.use(express.json({ limit: '1mb' }));
 
 // Rate limiting
