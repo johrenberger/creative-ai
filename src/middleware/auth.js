@@ -13,18 +13,18 @@ import { validateSession } from '../auth.js';
  */
 export function requireAuth(req, res, next) {
   const token = parseSessionCookie(req.headers.cookie || '');
-  
+
   if (!token) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  
+
   validateSession(token).then(user => {
     if (!user) {
       return res.status(401).json({ error: 'Session expired or invalid' });
     }
     req.user = user;
     next();
-  }).catch(err => {
+  }).catch(_err => {
     res.status(500).json({ error: 'Authentication error' });
   });
 }
@@ -35,11 +35,11 @@ export function requireAuth(req, res, next) {
  */
 export function optionalAuth(req, res, next) {
   const token = parseSessionCookie(req.headers.cookie || '');
-  
+
   if (!token) {
     return next();
   }
-  
+
   validateSession(token).then(user => {
     if (user) {
       req.user = user;
@@ -50,7 +50,7 @@ export function optionalAuth(req, res, next) {
 
 /**
  * Parse session_token from Cookie header string.
- * @param {string} cookieHeader 
+ * @param {string} cookieHeader
  * @returns {string|null}
  */
 function parseSessionCookie(cookieHeader) {

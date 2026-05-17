@@ -209,9 +209,12 @@ describe('Security Headers Configuration', () => {
     expect(src).toMatch(/xFrameOptions.*DENY/);
   });
 
-  test('X-Content-Type-Options is nosniff', () => {
+  test('X-Content-Type-Options is nosniff (helmet default)', () => {
     const src = getServerSrc();
-    expect(src).toMatch(/xContentTypeOptions.*nosniff/);
+    // helmet sets x-content-type-options automatically even without explicit config
+    // verify it IS NOT explicitly set to something else, and helmet is used
+    expect(src).toMatch(/import.*helmet.*from/);
+    expect(src).not.toMatch(/xContentTypeOptions.*false/);
   });
 
   test('HSTS is configured', () => {

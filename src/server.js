@@ -105,31 +105,31 @@ function parseSessionCookie(cookieHeader) {
 
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password } = req.body || {};
-  
+
   if (!username || !email || !password) {
     return res.status(400).json({ error: 'Missing required fields: username, email, password' });
   }
-  
+
   if (username.length < 3 || username.length > 32) {
     return res.status(400).json({ error: 'Username must be 3-32 characters' });
   }
-  
+
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return res.status(400).json({ error: 'Invalid email format' });
   }
-  
+
   if (password.length < 8) {
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
   }
-  
+
   try {
     const { createUser, getUserByUsernameOrEmail } = await import('./auth.js');
-    
+
     const existing = getUserByUsernameOrEmail(username);
     if (existing) {
       return res.status(409).json({ error: 'Username or email already exists' });
     }
-    
+
     const user = await createUser(username, email, password);
     res.status(201).json({ id: user.id, username: user.username, email: user.email });
   } catch (err) {
@@ -142,34 +142,34 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body || {};
-  
+
   if (!username || !password) {
     return res.status(400).json({ error: 'Missing username and password' });
   }
-  
+
   try {
     const { getUserByUsernameOrEmail, verifyPassword, createSession } = await import('./auth.js');
-    
+
     const user = getUserByUsernameOrEmail(username);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
+
     const valid = await verifyPassword(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
+
     // Update last login
     const db = (await import('./db.js')).getDb();
     db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
-    
+
     const token = await createSession(
       user.id,
       req.ip || req.socket.remoteAddress || '',
       req.get('User-Agent') || ''
     );
-    
+
     res.cookie('session_id', token, { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: 7*24*60*60 });
     res.json({ id: user.id, username: user.username, email: user.email });
   } catch (err) {
@@ -192,7 +192,7 @@ app.get('/api/auth/session', async (req, res) => {
   if (!token) {
     return res.json({ authenticated: false });
   }
-  
+
   try {
     const { validateSession } = await import('./auth.js');
     const user = await validateSession(token);
