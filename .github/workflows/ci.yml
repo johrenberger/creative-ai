@@ -413,3 +413,72 @@ jobs:
           environment-variables: |
             CTI_PORT=3456
             CTI_WEBHOOK_SECRET=${{ secrets.CTI_WEBHOOK_SECRET }}
+
+  e2e-ui-tests:
+    name: UI Tests (Headless Playwright)
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          pip install --break-system-packages \
+            pytest \
+            playwright \
+            pytest-playwright \
+            pytest-base-url
+
+      - name: Install Chromium browser
+        run: playwright install chromium
+
+      - name: Register test user (if not exists)
+        run: |
+          python3 -c "
+          import urllib.request, json
+          url = 'https://cti.clawdexter.tech/api/auth/register'
+          data = json.dumps({'username':'e2etest','email':'e2e@test.com','password':'testpass123'}).encode()
+          req = urllib.request.Request(url, data=data, headers={'Content-Type':'application/json'})
+          try:
+            with urllib.request.urlopen(req) as r:
+              print('Test user registered:', r.status)
+          except urllib.error.HTTPError as e:
+            if e.code == 409:
+              print('Test user already exists, skipping')
+            else:
+              print('Unexpected error:', e.code)
+              raise
+          "
+
+      - name: Run E2E UI tests
+        run: |
+          pytest tests/e2e/test_cti.py \
+            --base-url=https://cti.clawdexter.tech \
+            -v \
+            --tb=short \
+            -m "not websocket"
+        continue-on-error: true
+
+      - name: Run WebSocket tests
+        run: |
+          pytest tests/e2e/test_cti.py \
+            --base-url=https://cti.clawdexter.tech \
+            -v \
+            --tb=short \
+            -m websocket
+        continue-on-error: true
+
+      - name: Upload Playwright traces (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: playwright-traces/
+          retention-days: 14
