@@ -45,7 +45,6 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   xFrameOptions: 'DENY',
-  xContentTypeOptions: 'nosniff',
   strictTransportSecurity: { maxAge: 31536000, includeSubDomains: true }
 }));
 app.use(cors());
