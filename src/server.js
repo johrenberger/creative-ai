@@ -19,6 +19,7 @@ import * as tasks from './tasks.js';
 import * as context from './context.js';
 import * as memory from './memory.js';
 import * as bridge from './bridge.js';
+import { requireAuth } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -95,9 +96,120 @@ app.get('/api/stats', (req, res) => {
   });
 });
 
+// ============ AUTH ============
+
+function parseSessionCookie(cookieHeader) {
+  if (!cookieHeader) return null;
+  const match = cookieHeader.match(/(?:^|;\s*)session_id=([^;]*)/);
+  return match ? match[1] : null;
+}
+
+app.post('/api/auth/register', async (req, res) => {
+  const { username, email, password } = req.body || {};
+  
+  if (!username || !email || !password) {
+    return res.status(400).json({ error: 'Missing required fields: username, email, password' });
+  }
+  
+  if (username.length < 3 || username.length > 32) {
+    return res.status(400).json({ error: 'Username must be 3-32 characters' });
+  }
+  
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: 'Invalid email format' });
+  }
+  
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+  
+  try {
+    const { createUser, getUserByUsernameOrEmail } = await import('./auth.js');
+    
+    const existing = getUserByUsernameOrEmail(username);
+    if (existing) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
+    
+    const user = await createUser(username, email, password);
+    res.status(201).json({ id: user.id, username: user.username, email: user.email });
+  } catch (err) {
+    if (err.message.includes('UNIQUE constraint')) {
+      return res.status(409).json({ error: 'Username or email already exists' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+  const { username, password } = req.body || {};
+  
+  if (!username || !password) {
+    return res.status(400).json({ error: 'Missing username and password' });
+  }
+  
+  try {
+    const { getUserByUsernameOrEmail, verifyPassword, createSession } = await import('./auth.js');
+    
+    const user = getUserByUsernameOrEmail(username);
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const valid = await verifyPassword(password, user.password_hash);
+    if (!valid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Update last login
+    const db = (await import('./db.js')).getDb();
+    db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
+    
+    const token = await createSession(
+      user.id,
+      req.ip || req.socket.remoteAddress || '',
+      req.get('User-Agent') || ''
+    );
+    
+    res.cookie('session_id', token, { httpOnly: true, sameSite: 'Lax', path: '/', maxAge: 7*24*60*60 });
+    res.json({ id: user.id, username: user.username, email: user.email });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/logout', async (req, res) => {
+  const token = parseSessionCookie(req.headers.cookie || '');
+  if (token) {
+    const { destroySession } = await import('./auth.js');
+    await destroySession(token);
+  }
+  res.clearCookie('session_id', { path: '/' });
+  res.json({ success: true });
+});
+
+app.get('/api/auth/session', async (req, res) => {
+  const token = parseSessionCookie(req.headers.cookie || '');
+  if (!token) {
+    return res.json({ authenticated: false });
+  }
+  
+  try {
+    const { validateSession } = await import('./auth.js');
+    const user = await validateSession(token);
+    if (!user) {
+      res.clearCookie('session_id', { path: '/' });
+      return res.json({ authenticated: false });
+    }
+    res.json({ authenticated: true, user: { id: user.id, username: user.username, email: user.email } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============ TASKS ============
 
-app.post('/api/tasks', (req, res) => {
+app.post('/api/tasks', requireAuth, (req, res) => {
   const validation = validateRequired(req.body, ['title']);
   if (!validation.valid) return res.status(400).json(validation);
 
@@ -119,7 +231,7 @@ app.post('/api/tasks', (req, res) => {
   }
 });
 
-app.get('/api/tasks', (req, res) => {
+app.get('/api/tasks', requireAuth, (req, res) => {
   try {
     const result = tasks.getTasks({
       status: req.query.status,
@@ -133,7 +245,7 @@ app.get('/api/tasks', (req, res) => {
   }
 });
 
-app.get('/api/tasks/:id', (req, res) => {
+app.get('/api/tasks/:id', requireAuth, (req, res) => {
   try {
     const task = tasks.getTask(parseInt(req.params.id));
     if (!task) return res.status(404).json({ error: 'Task not found' });
@@ -143,7 +255,7 @@ app.get('/api/tasks/:id', (req, res) => {
   }
 });
 
-app.patch('/api/tasks/:id', (req, res) => {
+app.patch('/api/tasks/:id', requireAuth, (req, res) => {
   try {
     const task = tasks.updateTask(parseInt(req.params.id), req.body);
     if (!task) return res.status(404).json({ error: 'Task not found' });
@@ -154,7 +266,7 @@ app.patch('/api/tasks/:id', (req, res) => {
   }
 });
 
-app.delete('/api/tasks/:id', (req, res) => {
+app.delete('/api/tasks/:id', requireAuth, (req, res) => {
   try {
     const deleted = tasks.deleteTask(parseInt(req.params.id));
     if (!deleted) return res.status(404).json({ error: 'Task not found' });
@@ -167,7 +279,7 @@ app.delete('/api/tasks/:id', (req, res) => {
 
 // ============ CONTEXT ============
 
-app.post('/api/context', (req, res) => {
+app.post('/api/context', requireAuth, (req, res) => {
   if (!req.body.key) return res.status(400).json({ error: 'Missing required field: key' });
 
   try {
@@ -185,7 +297,7 @@ app.post('/api/context', (req, res) => {
   }
 });
 
-app.get('/api/context', (req, res) => {
+app.get('/api/context', requireAuth, (req, res) => {
   try {
     const result = context.getAllContext(req.query.project);
     res.json(result);
@@ -194,7 +306,7 @@ app.get('/api/context', (req, res) => {
   }
 });
 
-app.get('/api/context/:key', (req, res) => {
+app.get('/api/context/:key', requireAuth, (req, res) => {
   try {
     const ctx = context.getContext(req.params.key);
     if (!ctx) return res.status(404).json({ error: 'Context not found' });
@@ -204,7 +316,7 @@ app.get('/api/context/:key', (req, res) => {
   }
 });
 
-app.delete('/api/context/:key', (req, res) => {
+app.delete('/api/context/:key', requireAuth, (req, res) => {
   try {
     const deleted = context.deleteContext(req.params.key);
     if (!deleted) return res.status(404).json({ error: 'Context not found' });
@@ -216,7 +328,7 @@ app.delete('/api/context/:key', (req, res) => {
 
 // ============ MEMORY ============
 
-app.post('/api/memory', (req, res) => {
+app.post('/api/memory', requireAuth, (req, res) => {
   const validation = validateRequired(req.body, ['content']);
   if (!validation.valid) return res.status(400).json(validation);
 
@@ -237,7 +349,7 @@ app.post('/api/memory', (req, res) => {
   }
 });
 
-app.get('/api/memory/search', (req, res) => {
+app.get('/api/memory/search', requireAuth, (req, res) => {
   try {
     const results = memory.searchMemories(
       req.query.q || '',
@@ -253,7 +365,7 @@ app.get('/api/memory/search', (req, res) => {
   }
 });
 
-app.get('/api/memory/recent', (req, res) => {
+app.get('/api/memory/recent', requireAuth, (req, res) => {
   try {
     const results = memory.getRecentMemories(Math.min(50, parseInt(req.query.limit) || 10));
     res.json(results);
@@ -262,7 +374,7 @@ app.get('/api/memory/recent', (req, res) => {
   }
 });
 
-app.get('/api/memory/:id', (req, res) => {
+app.get('/api/memory/:id', requireAuth, (req, res) => {
   try {
     const mem = memory.getMemory(parseInt(req.params.id));
     if (!mem) return res.status(404).json({ error: 'Memory not found' });
@@ -272,7 +384,7 @@ app.get('/api/memory/:id', (req, res) => {
   }
 });
 
-app.patch('/api/memory/:id', (req, res) => {
+app.patch('/api/memory/:id', requireAuth, (req, res) => {
   try {
     const mem = memory.updateMemory(parseInt(req.params.id), req.body);
     if (!mem) return res.status(404).json({ error: 'Memory not found' });
@@ -282,7 +394,7 @@ app.patch('/api/memory/:id', (req, res) => {
   }
 });
 
-app.delete('/api/memory/:id', (req, res) => {
+app.delete('/api/memory/:id', requireAuth, (req, res) => {
   try {
     const deleted = memory.deleteMemory(parseInt(req.params.id));
     if (!deleted) return res.status(404).json({ error: 'Memory not found' });
@@ -294,7 +406,7 @@ app.delete('/api/memory/:id', (req, res) => {
 
 // ============ BRIDGE ============
 
-app.post('/api/bridge/message', (req, res) => {
+app.post('/api/bridge/message', requireAuth, (req, res) => {
   const validation = validateRequired(req.body, ['exchangeType', 'subject', 'content']);
   if (!validation.valid) return res.status(400).json(validation);
 
@@ -323,7 +435,7 @@ app.post('/api/bridge/message', (req, res) => {
   }
 });
 
-app.get('/api/bridge/exchange', (req, res) => {
+app.get('/api/bridge/exchange', requireAuth, (req, res) => {
   try {
     const results = bridge.getExchanges({
       status: req.query.status,
@@ -337,7 +449,7 @@ app.get('/api/bridge/exchange', (req, res) => {
   }
 });
 
-app.get('/api/bridge/exchange/:id', (req, res) => {
+app.get('/api/bridge/exchange/:id', requireAuth, (req, res) => {
   try {
     const exchange = bridge.getExchange(parseInt(req.params.id));
     if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
@@ -347,7 +459,7 @@ app.get('/api/bridge/exchange/:id', (req, res) => {
   }
 });
 
-app.post('/api/bridge/exchange/:id/respond', (req, res) => {
+app.post('/api/bridge/exchange/:id/respond', requireAuth, (req, res) => {
   if (!req.body.response) return res.status(400).json({ error: 'Missing required field: response' });
 
   try {
@@ -362,7 +474,7 @@ app.post('/api/bridge/exchange/:id/respond', (req, res) => {
   }
 });
 
-app.post('/api/bridge/exchange/:id/close', (req, res) => {
+app.post('/api/bridge/exchange/:id/close', requireAuth, (req, res) => {
   try {
     const closed = bridge.closeExchange(parseInt(req.params.id));
     if (!closed) return res.status(404).json({ error: 'Exchange not found' });
@@ -373,7 +485,7 @@ app.post('/api/bridge/exchange/:id/close', (req, res) => {
   }
 });
 
-app.post('/api/bridge/exchange/:id/escalate', (req, res) => {
+app.post('/api/bridge/exchange/:id/escalate', requireAuth, (req, res) => {
   try {
     const exchange = bridge.escalateExchange(parseInt(req.params.id));
     if (!exchange) return res.status(404).json({ error: 'Exchange not found' });
@@ -394,7 +506,7 @@ app.get('/api/preferences', (req, res) => {
   }
 });
 
-app.post('/api/preferences', (req, res) => {
+app.post('/api/preferences', requireAuth, (req, res) => {
   if (!req.body.key) return res.status(400).json({ error: 'Missing required field: key' });
 
   try {
@@ -519,8 +631,13 @@ process.on('SIGINT', () => {
 
 initializeDatabase();
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`
+// Only start server when run directly (not imported by tests/supertest)
+// supertest binds to app directly without needing server.listen()
+const START_SERVER = process.env.CTI_START_SERVER === 'true';
+
+if (START_SERVER) {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`
 ╔═══════════════════════════════════════════╗
 ║   CTI v1.0.0 - Thinking Interface          ║
 ╠═══════════════════════════════════════════╣
@@ -528,7 +645,8 @@ server.listen(PORT, '0.0.0.0', () => {
 ║   WS:    ws://localhost:${PORT}/ws            ║
 ║   Stats: http://localhost:${PORT}/api/stats  ║
 ╚═══════════════════════════════════════════╝
-  `);
-});
+    `);
+  });
+}
 
-export { app, server, broadcast };
+export { app, server, broadcast, closeDatabase };

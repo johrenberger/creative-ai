@@ -364,12 +364,17 @@
   <div class="container">
     <header>
       <h1>🧠 CTI - Clawdexter's Thinking Interface</h1>
-      <div class="ws-status">
-        <span class="ws-indicator" id="wsIndicator"></span>
-        <span id="wsStatus">Disconnected</span>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div id="authNav"></div>
+        <div class="ws-status">
+          <span class="ws-indicator" id="wsIndicator"></span>
+          <span id="wsStatus">Disconnected</span>
+        </div>
       </div>
     </header>
-    
+
+    <div id="loginPanel" style="display:none;padding:20px 0"></div>
+
     <div class="tabs">
       <button class="tab active" data-tab="dashboard">Dashboard</button>
       <button class="tab" data-tab="tasks">Tasks</button>
@@ -664,19 +669,33 @@
     let ws = null;
     
     // Initialize
-    document.addEventListener('DOMContentLoaded', () => {
-      loadDashboard();
-      connectWebSocket();
-      
-      // Tab switching
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Check auth state before loading UI
+      await checkAuthState();
+
+      // Redirect to dashboard if logged in, otherwise show login form
+      if (authUser) {
+        loadDashboard();
+        connectWebSocket();
+      } else {
+        showLoginForm();
+      }
+
+      // Tab switching (block for unauthenticated users on data tabs)
       document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
+          const dataTabs = ['tasks', 'memory', 'bridge', 'context'];
+          if (!authUser && dataTabs.includes(tab.dataset.tab)) {
+            showLoginForm();
+            return;
+          }
           switchTab(tab.dataset.tab);
         });
       });
     });
     
     function switchTab(tabName) {
+      if (!authUser) { showLoginForm(); return; }
       document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
@@ -693,11 +712,109 @@
     }
     
     async function api(method, path, data = null) {
-      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      const opts = { method, credentials: 'same-origin', headers: { 'Content-Type': 'application/json' } };
       if (data) opts.body = JSON.stringify(data);
       const res = await fetch(API + path, opts);
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const err = await res.text();
+        if (res.status === 401) { checkAuthState(); }
+        throw new Error(err);
+      }
       return res.json();
+    }
+
+    // Auth state
+    let authUser = null;
+    let authLoaded = false;
+
+    async function checkAuthState() {
+      try {
+        const r = await fetch(API + '/api/auth/session', { credentials: 'same-origin' });
+        const data = await r.json();
+        authUser = data.authenticated ? data.user : null;
+      } catch {
+        authUser = null;
+      }
+      authLoaded = true;
+      updateAuthUI();
+    }
+
+    function updateAuthUI() {
+      const authNav = document.getElementById('authNav');
+      if (!authNav) return;
+      if (authUser) {
+        authNav.innerHTML = `
+          <span style="color:var(--text-dim);font-size:14px">${escapeHtml(authUser.username)}</span>
+          <button class="btn btn-secondary" onclick="logout()" style="padding:6px 12px;font-size:13px">Logout</button>
+        `;
+        document.getElementById('loginPanel').style.display = 'none';
+        document.querySelectorAll('.panel').forEach(p => p.style.display = p.classList.contains('active') ? 'block' : 'none');
+      } else {
+        authNav.innerHTML = `
+          <button class="btn btn-primary" onclick="showLoginForm()" style="padding:6px 12px;font-size:13px">Login</button>
+        `;
+        if (authLoaded) {
+          document.getElementById('loginPanel').style.display = 'block';
+          document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+        }
+      }
+    }
+
+    function showLoginForm() {
+      const panel = document.getElementById('loginPanel');
+      panel.innerHTML = `
+        <div class="modal active" id="loginModal" style="display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;max-width:400px;margin:80px auto">
+            <h2 style="margin-bottom:20px">Sign In</h2>
+            <div id="loginError" style="color:var(--danger);margin-bottom:12px;font-size:14px;display:none"></div>
+            <input type="text" id="loginUsername" placeholder="Username or email" style="width:100%;padding:10px;margin-bottom:12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" />
+            <input type="password" id="loginPassword" placeholder="Password" style="width:100%;padding:10px;margin-bottom:16px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)" onkeydown="if(event.key==='Enter')login()" />
+            <div style="display:flex;gap:12px">
+              <button class="btn btn-primary" onclick="login()" style="flex:1">Sign In</button>
+              <button class="btn" onclick="closeLogin()" style="background:var(--border);color:var(--text)">Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function closeLogin() {
+      document.getElementById('loginPanel').innerHTML = '';
+      showLoginForm();
+    }
+
+    async function login() {
+      const username = document.getElementById('loginUsername').value;
+      const password = document.getElementById('loginPassword').value;
+      const errEl = document.getElementById('loginError');
+      errEl.style.display = 'none';
+      try {
+        const res = await fetch(API + '/api/auth/login', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Login failed'; errEl.style.display = 'block'; return; }
+        authUser = data;
+        document.getElementById('loginPanel').innerHTML = '';
+        updateAuthUI();
+        const activeTab = document.querySelector('.tab.active')?.dataset.tab || 'dashboard';
+        switchTab(activeTab);
+      } catch (e) {
+        errEl.textContent = 'Login failed: ' + e.message;
+        errEl.style.display = 'block';
+      }
+    }
+
+    async function logout() {
+      try {
+        await fetch(API + '/api/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      } catch {}
+      authUser = null;
+      updateAuthUI();
+      showLoginForm();
     }
     
     // WebSocket

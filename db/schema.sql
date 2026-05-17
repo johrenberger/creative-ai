@@ -1,3 +1,29 @@
+-- Users table
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_login DATETIME
+);
+
+-- Sessions table
+CREATE TABLE IF NOT EXISTS sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_token TEXT UNIQUE NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    ip_address TEXT,
+    user_agent TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+
 -- Creative AI Database Schema
 -- Clawdexter's Thinking Interface
 

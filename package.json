@@ -8,7 +8,7 @@
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "cli": "node src/cli.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --forceExit",
     "build": "echo 'Build complete'",
     "lint": "eslint src/",
     "security": "npm audit --audit-level=high"
@@ -23,6 +23,7 @@
   "author": "Clawdexter",
   "license": "MIT",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "better-sqlite3": "^11.0.0",
     "cors": "^2.8.5",
     "dompurify": "^3.1.6",
@@ -36,10 +37,11 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/supertest": "^7.2.0",
     "eslint": "^9.12.0",
     "globals": "^17.6.0",
     "jest": "^29.7.0",
-    "supertest": "^7.0.0"
+    "supertest": "^7.2.2"
   },
   "jest": {
     "testEnvironment": "node",
@@ -51,6 +53,7 @@
     "testMatch": [
       "**/tests/**/*.test.js"
     ],
+    "maxWorkers": 1,
     "collectCoverageFrom": [
       "src/**/*.js"
     ],

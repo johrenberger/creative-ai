@@ -214,35 +214,112 @@ jobs:
         run: |
           FAILED=0
 
-          echo "=== /api/tasks ==="
-          RESP=$(curl -s http://localhost:3456/api/tasks)
-          echo "$RESP"
-          echo "$RESP" | grep -q "tasks" && echo "✓ /api/tasks" || { echo "✗ /api/tasks FAILED"; FAILED=1; }
-
-          echo ""
-          echo "=== /api/context ==="
-          RESP=$(curl -s http://localhost:3456/api/context)
-          echo "$RESP"
-          echo "$RESP" | grep -q "context" && echo "✓ /api/context" || { echo "✗ /api/context FAILED"; FAILED=1; }
-
-          echo ""
-          echo "=== /api/memory/recent ==="
-          RESP=$(curl -s http://localhost:3456/api/memory/recent)
-          echo "$RESP"
-          echo "$RESP" | grep -q "recent" && echo "✓ /api/memory/recent" || { echo "✗ /api/memory/recent FAILED"; FAILED=1; }
-
-          echo ""
-          echo "=== /api/bridge/exchange ==="
-          RESP=$(curl -s http://localhost:3456/api/bridge/exchange)
-          echo "$RESP"
-          echo "$RESP" | grep -q "exchanges" && echo "✓ /api/bridge/exchange" || { echo "✗ /api/bridge/exchange FAILED"; FAILED=1; }
-
-          if [ $FAILED -eq 1 ]; then
-            echo ""
-            echo "⚠ Some endpoints returned unexpected responses — see above for details"
+          echo "=== /api/tasks (requires auth - expect 401) ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3456/api/tasks)
+          echo "Response code: $STATUS"
+          if [ "$STATUS" = "401" ]; then
+            echo "✓ /api/tasks requires authentication (401)"
+          else
+            echo "✗ /api/tasks: expected 401, got $STATUS"
+            FAILED=1
           fi
+
           echo ""
-          echo "API endpoint validation complete"
+          echo "=== /api/context (requires auth - expect 401) ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3456/api/context)
+          echo "Response code: $STATUS"
+          if [ "$STATUS" = "401" ]; then
+            echo "✓ /api/context requires authentication (401)"
+          else
+            echo "✗ /api/context: expected 401, got $STATUS"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "=== /api/memory/recent (requires auth - expect 401) ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3456/api/memory/recent)
+          echo "Response code: $STATUS"
+          if [ "$STATUS" = "401" ]; then
+            echo "✓ /api/memory/recent requires authentication (401)"
+          else
+            echo "✗ /api/memory/recent: expected 401, got $STATUS"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "=== /api/bridge/exchange (requires auth - expect 401) ==="
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3456/api/bridge/exchange)
+          echo "Response code: $STATUS"
+          if [ "$STATUS" = "401" ]; then
+            echo "✓ /api/bridge/exchange requires authentication (401)"
+          else
+            echo "✗ /api/bridge/exchange: expected 401, got $STATUS"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "=== /api/stats (public - expect 200) ==="
+          RESP=$(curl -s http://localhost:3456/api/stats)
+          echo "$RESP"
+          echo "$RESP" | grep -q "tasks" && echo "✓ /api/stats returns tasks" || { echo "✗ /api/stats FAILED"; FAILED=1; }
+
+          echo ""
+          echo "=== POST /api/auth/register ==="
+          REG_RESP=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3456/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"username":"ciuser","email":"ci@test.com","password":"testpassword123"}')
+          REG_CODE=$(echo "$REG_RESP" | tail -1)
+          echo "Response code: $REG_CODE"
+          if [ "$REG_CODE" = "201" ]; then
+            echo "✓ /api/auth/register creates user (201)"
+          else
+            echo "✗ /api/auth/register: expected 201, got $REG_CODE"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "=== POST /api/auth/login ==="
+          LOGIN_RESP=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3456/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"ciuser","password":"testpassword123"}')
+          LOGIN_CODE=$(echo "$LOGIN_RESP" | tail -1)
+          LOGIN_BODY=$(echo "$LOGIN_RESP" | head -1)
+          echo "Response code: $LOGIN_CODE"
+          if [ "$LOGIN_CODE" = "200" ]; then
+            echo "✓ /api/auth/login succeeds (200)"
+            SESSION_COOKIE=$(echo "$LOGIN_RESP" | grep -i "set-cookie" | head -1)
+            echo "Session cookie: ${SESSION_COOKIE:0:50}..."
+          else
+            echo "✗ /api/auth/login: expected 200, got $LOGIN_CODE"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "=== POST /api/auth/login (wrong password - expect 401) ==="
+          BAD_LOGIN=$(curl -s -w "\n%{http_code}" -X POST http://localhost:3456/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"username":"ciuser","password":"wrongpassword"}')
+          BAD_CODE=$(echo "$BAD_LOGIN" | tail -1)
+          echo "Response code: $BAD_CODE"
+          if [ "$BAD_CODE" = "401" ]; then
+            echo "✓ /api/auth/login with wrong password returns 401"
+          else
+            echo "✗ /api/auth/login with wrong password: expected 401, got $BAD_CODE"
+            FAILED=1
+          fi
+
+          echo ""
+          echo "=== GET /api/auth/session (no cookie - expect unauthenticated) ==="
+          SESS_RESP=$(curl -s http://localhost:3456/api/auth/session)
+          echo "$SESS_RESP"
+          echo "$SESS_RESP" | grep -q "authenticated.*false" && echo "✓ /api/auth/session returns unauthenticated" || { echo "✗ /api/auth/session FAILED"; FAILED=1; }
+
+          echo ""
+          echo "Auth endpoint validation complete"
+          if [ $FAILED -eq 1 ]; then
+            echo "⚠ Some auth validation checks failed — see above"
+            exit 1
+          fi
 
       - name: Validate 404 for unknown routes
         run: |

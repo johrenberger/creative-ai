@@ -15,14 +15,18 @@ const DB_PATH = process.env.CTI_DB_PATH || join(__dirname, '..', 'db', 'cti.db')
 
 let db = null;
 
+function applyPragmas(database) {
+  database.pragma('journal_mode = WAL');
+  database.pragma('foreign_keys = ON');
+  database.pragma('synchronous = NORMAL');
+  database.pragma('temp_store = MEMORY');
+  database.pragma('mmap_size = 268435456');
+}
+
 export function getDb() {
   if (!db) {
     db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
-    db.pragma('foreign_keys = ON');
-    db.pragma('synchronous = NORMAL');
-    db.pragma('temp_store = MEMORY');
-    db.pragma('mmap_size = 268435456');
+    applyPragmas(db);
   }
   return db;
 }
