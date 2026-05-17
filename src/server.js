@@ -33,7 +33,8 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com'],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-hashes'", 'https://accounts.google.com'],
+      scriptSrcAttr: ["'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https://cti.clawdexter.tech'],
       connectSrc: ["'self'", 'wss:', 'https://cti.clawdexter.tech'],
