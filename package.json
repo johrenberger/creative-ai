@@ -8,10 +8,12 @@
     "start": "CTI_START_SERVER=true node src/server.js",
     "dev": "node --watch src/server.js",
     "cli": "node src/cli.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --forceExit",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --forceExit",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --forceExit",
     "build": "echo 'Build complete'",
     "lint": "eslint src/",
-    "security": "npm audit --audit-level=high"
+    "security": "npm audit --audit-level=high",
+    "coverage:check": "node scripts/coverage-check.js"
   },
   "keywords": [
     "productivity",
@@ -24,7 +26,7 @@
   "license": "MIT",
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^11.0.0",
+    "better-sqlite3": "^12.10.0",
     "cors": "^2.8.5",
     "dompurify": "^3.1.6",
     "express": "^4.21.0",
@@ -55,12 +57,22 @@
     ],
     "maxWorkers": 1,
     "collectCoverageFrom": [
-      "src/**/*.js"
+      "src/**/*.js",
+      "src/middleware/**/*.js"
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/tests/"
-    ]
+      "/tests/",
+      "/coverage/"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "statements": 90,
+        "branches": 90,
+        "functions": 90,
+        "lines": 90
+      }
+    }
   },
   "engines": {
     "node": ">=18.0.0"
