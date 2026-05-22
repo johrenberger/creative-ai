@@ -51,6 +51,9 @@ jobs:
       - name: Run tests with coverage
         run: npm test
 
+      - name: Run per-file coverage check
+        run: npm run coverage:check
+
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
         if: always()
@@ -86,6 +89,9 @@ jobs:
 
       - name: Generate coverage report
         run: npm test
+
+      - name: Run per-file coverage check
+        run: npm run coverage:check
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
