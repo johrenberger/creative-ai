@@ -14,7 +14,7 @@ jest.unstable_mockModule('../src/db.js', () => ({
   closeDatabase: jest.fn()
 }));
 
-const { setContext, getContext, getAllContext, deleteContext, setPreference, getPreference, getAllPreferences } = await import('../src/context.js');
+const { setContext, getContext, getAllContext, deleteContext, getContextHistory, setPreference, getPreference, getAllPreferences } = await import('../src/context.js');
 
 describe('Context Module', () => {
   beforeEach(() => {
@@ -168,6 +168,64 @@ describe('Context Module', () => {
       const result = deleteContext('nonexistent');
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('getContextHistory', () => {
+    it('should return empty array for non-existent key', () => {
+      const mockGet = jest.fn().mockReturnValue(undefined);
+      mockDb.prepare.mockReturnValue({ get: mockGet });
+
+      const result = getContextHistory('nonexistent-key');
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return array with single entry for existing key', () => {
+      const mockGet = jest.fn().mockReturnValue({
+        key: 'history-key',
+        value: 'some-value',
+        type: 'string',
+        project: 'global',
+        updated_at: '2024-01-01T00:00:00.000Z'
+      });
+      mockDb.prepare.mockReturnValue({ get: mockGet });
+
+      const result = getContextHistory('history-key');
+
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBe(1);
+      expect(result[0].key).toBe('history-key');
+    });
+
+    it('should parse JSON value in history entry', () => {
+      const mockGet = jest.fn().mockReturnValue({
+        key: 'json-history',
+        value: '{"theme":"dark"}',
+        type: 'json',
+        project: 'global',
+        updated_at: '2024-01-01T00:00:00.000Z'
+      });
+      mockDb.prepare.mockReturnValue({ get: mockGet });
+
+      const result = getContextHistory('json-history');
+
+      expect(result[0].value).toEqual({ theme: 'dark' });
+    });
+
+    it('should include updated_at in history entry', () => {
+      const mockGet = jest.fn().mockReturnValue({
+        key: 'time-key',
+        value: 'value',
+        type: 'string',
+        project: 'global',
+        updated_at: '2024-06-15T12:30:00.000Z'
+      });
+      mockDb.prepare.mockReturnValue({ get: mockGet });
+
+      const result = getContextHistory('time-key');
+
+      expect(result[0].updated_at).toBe('2024-06-15T12:30:00.000Z');
     });
   });
 

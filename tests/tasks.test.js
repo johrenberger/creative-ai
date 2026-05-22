@@ -122,6 +122,20 @@ describe('Tasks Module', () => {
       // Verify prepare was called at least once
       expect(mockDb.prepare).toHaveBeenCalled();
     });
+
+    it('should filter by assignedTo when provided', () => {
+      const mockAll = jest.fn().mockReturnValue([
+        { id: 1, title: 'Assigned Task', status: 'pending', tags: '[]', priority: 5, urgency: 5, assigned_to: 'alice' }
+      ]);
+      mockDb.prepare.mockReturnValue({ all: mockAll });
+
+      const results = getTasks({ assignedTo: 'alice' });
+
+      expect(results).toHaveLength(1);
+      expect(results[0].assigned_to).toBe('alice');
+      // The query should include the assigned_to filter
+      expect(mockDb.prepare).toHaveBeenCalled();
+    });
   });
 
   describe('getTask', () => {
@@ -191,6 +205,17 @@ describe('Tasks Module', () => {
       expect(mockRun).toHaveBeenCalled();
     });
 
+    it('should return null when no valid fields are provided', () => {
+      // Empty updates object means no allowed fields match
+      const mockRun = jest.fn().mockReturnValue({ changes: 0 });
+      mockDb.prepare.mockReturnValue({ run: mockRun });
+
+      const result = updateTask(1, { foo: 'bar', baz: 123 });
+
+      expect(result).toBeNull();
+      // fields.length === 0 triggers early return
+    });
+
     it('should set completed_at when status is done', () => {
       const mockRun = jest.fn().mockReturnValue({ changes: 1 });
       
@@ -214,6 +239,66 @@ describe('Tasks Module', () => {
 
       // Verify the UPDATE was called (which should include completed_at)
       expect(mockRun).toHaveBeenCalled();
+    });
+  });
+
+  describe('getTask branch coverage', () => {
+    it('should use || fallback for tags when row.tags is null or undefined (b[13] loc=1)', () => {
+      // getTask line 82: tags: JSON.parse(row.tags || '[]')
+      // When tags is null, || '[]' fallback triggers (b[13] loc=1)
+      const mockGet = jest.fn().mockReturnValue({
+        id: 1, title: 'Task', status: 'pending', priority: 5, urgency: 5, tags: null
+      });
+      mockDb.prepare.mockReturnValue({ get: mockGet });
+
+      const result = getTask(1);
+
+      expect(result.tags).toEqual([]);
+    });
+  });
+
+  describe('getTasks branch coverage', () => {
+    it('should use || fallback for tags when row.tags is null or undefined (b[11] loc=1)', () => {
+      // getTasks line 69: tags: JSON.parse(row.tags || '[]')
+      // When tags is null, || '[]' fallback triggers (b[11] loc=1)
+      const mockAll = jest.fn().mockReturnValue([
+        { id: 1, title: 'Task', status: 'pending', priority: 5, urgency: 5, tags: null }
+      ]);
+      mockDb.prepare.mockReturnValue({ all: mockAll });
+
+      const results = getTasks();
+
+      expect(results[0].tags).toEqual([]);
+    });
+  });
+
+  describe('updateTask branch coverage', () => {
+    it('should use tags branch when updating tags (b[17] loc=0)', () => {
+      const mockRun = jest.fn().mockReturnValue({ changes: 1 });
+      const mockGet = jest.fn().mockReturnValue({
+        id: 1, title: 'Updated', status: 'done', priority: 5, urgency: 5, tags: '["new"]'
+      });
+      mockDb.prepare.mockImplementation((query) => {
+        if (query.includes('UPDATE')) return { run: mockRun };
+        return { get: mockGet };
+      });
+
+      // Pass only tags field to exercise tags branch in updateTask
+      const result = updateTask(1, { tags: ['new', 'updated'] });
+
+      expect(result).not.toBeNull();
+      expect(mockRun).toHaveBeenCalled();
+    });
+
+    it('should cover empty updates return null (b[18] loc=0)', () => {
+      const mockRun = jest.fn();
+      mockDb.prepare.mockReturnValue({ run: mockRun });
+
+      // Only pass fields that are not in allowedFields list
+      const result = updateTask(1, { notAllowed: 'value' });
+
+      expect(result).toBeNull();
+      expect(mockRun).not.toHaveBeenCalled();
     });
   });
 

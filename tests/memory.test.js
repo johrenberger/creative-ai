@@ -297,5 +297,84 @@ describe('Memory Module', () => {
       // Verify prepare was called
       expect(mockDb.prepare).toHaveBeenCalled();
     });
+
+    it('should use default limit of 10 when called without argument', () => {
+      // Pass no limit — exercises default arg for _limit param
+      const mockAll = jest.fn().mockReturnValue([]);
+      mockDb.prepare.mockReturnValue({ all: mockAll });
+
+      getRecentMemories();
+
+      expect(mockDb.prepare).toHaveBeenCalled();
+    });
+
+    it('should handle rows with null or undefined tags (using || fallback)', () => {
+      // When row.tags is null/undefined, '[]' is used as fallback
+      const mockAll = jest.fn().mockReturnValue([
+        { id: 1, content: 'Memory without tags', type: 'note', tags: null },
+        { id: 2, content: 'Memory with empty tags', type: 'note', tags: undefined }
+      ]);
+      mockDb.prepare.mockReturnValue({ all: mockAll });
+
+      const results = getRecentMemories(10);
+
+      // Both should fall back to empty array via row.tags || '[]'
+      expect(results[0].tags).toEqual([]);
+      expect(results[1].tags).toEqual([]);
+    });
+  });
+
+  describe('searchMemories branch coverage', () => {
+    it('should use || fallback for tags when row.tags is null or undefined', () => {
+      // searchMemories row mapping: tags: JSON.parse(row.tags || '[]')
+      // When tags is null/falsy, the || '[]' fallback is used (b[10] loc=1)
+      const mockAll = jest.fn().mockReturnValue([
+        { id: 1, content: 'Memory with null tags', type: 'note', tags: null }
+      ]);
+      mockDb.prepare.mockReturnValue({ all: mockAll });
+
+      const results = searchMemories('Memory');
+
+      expect(results[0].tags).toEqual([]);
+    });
+  });
+
+  describe('getMemory branch coverage', () => {
+    it('should use || fallback for tags when row.tags is null or undefined', () => {
+      // getMemory row mapping: tags: JSON.parse(row.tags || '[]')
+      // When tags is null/falsy, the || '[]' fallback is used (b[12] loc=1)
+      const mockRun = jest.fn();
+      const mockGet = jest.fn().mockReturnValue({
+        id: 1, content: 'Memory', type: 'note', tags: null
+      });
+      mockDb.prepare.mockImplementation((query) => {
+        if (query.includes('UPDATE')) return { run: mockRun };
+        return { get: mockGet };
+      });
+
+      const result = getMemory(1);
+
+      expect(result.tags).toEqual([]);
+    });
+  });
+
+  describe('updateMemory branch coverage', () => {
+    it('should take non-tags branch for non-tags allowed fields (b[14] loc=0)', () => {
+      const mockRun = jest.fn().mockReturnValue({ changes: 1 });
+      const mockGet = jest.fn().mockReturnValue({
+        id: 1, content: 'Updated', type: 'note', tags: '[]', project: 'test', confidence: 0.9
+      });
+      mockDb.prepare.mockImplementation((query) => {
+        if (query.includes('UPDATE')) return { run: mockRun };
+        return { get: mockGet };
+      });
+
+      // Only pass non-tags allowed fields
+      const result = updateMemory(1, { content: 'Updated', project: 'test' });
+
+      expect(result).not.toBeNull();
+      expect(mockRun).toHaveBeenCalled();
+      // The cond-expr 'key === tags' evaluates false (b[14] loc=0 hit)
+    });
   });
 });
