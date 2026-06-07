@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "produced_at": "2026-06-07T22:14:00+02:00",
+  "repo": "https://github.com/johrenberger/creative-ai",
+  "profile": "standard",
+  "components": [
+    {
+      "component_id": "CTA-COMP-002",
+      "component_name": "auth",
+      "states": ["Anonymous", "Registered", "Authenticated", "SessionExpired", "LoggedOut"],
+      "transitions": [
+        {"from": "Anonymous", "to": "Registered", "trigger": "POST /api/auth/register with valid input"},
+        {"from": "Registered", "to": "Authenticated", "trigger": "POST /api/auth/login with correct password"},
+        {"from": "Authenticated", "to": "SessionExpired", "trigger": "session.expires_at < now() OR idle timeout 30 min"},
+        {"from": "Authenticated", "to": "LoggedOut", "trigger": "POST /api/auth/logout"},
+        {"from": "SessionExpired", "to": "Authenticated", "trigger": "POST /api/auth/login with correct password"}
+      ],
+      "coverage_requirements": {
+        "Anonymous→Registered": "Test 201 + user object + session cookie",
+        "Registered→Authenticated": "Test 200 + Set-Cookie + correct bcrypt verification",
+        "Authenticated→SessionExpired": "Test 401 from middleware, session row deleted",
+        "Authenticated→LoggedOut": "Test 200, session row deleted, cookie cleared",
+        "SessionExpired→Authenticated": "Test 200, new session created, old one invalidated"
+      }
+    },
+    {
+      "component_id": "CTA-COMP-004",
+      "component_name": "tasks",
+      "states": ["pending", "in_progress", "blocked", "done", "cancelled"],
+      "transitions": [
+        {"from": "pending", "to": "in_progress", "trigger": "PATCH /api/tasks/:id with status=in_progress"},
+        {"from": "pending", "to": "blocked", "trigger": "PATCH /api/tasks/:id with status=blocked"},
+        {"from": "pending", "to": "cancelled", "trigger": "PATCH /api/tasks/:id with status=cancelled"},
+        {"from": "in_progress", "to": "blocked", "trigger": "PATCH /api/tasks/:id with status=blocked"},
+        {"from": "in_progress", "to": "done", "trigger": "PATCH /api/tasks/:id with status=done"},
+        {"from": "blocked", "to": "in_progress", "trigger": "PATCH /api/tasks/:id with status=in_progress"},
+        {"from": "blocked", "to": "cancelled", "trigger": "PATCH /api/tasks/:id with status=cancelled"},
+        {"from": "done", "to": "in_progress", "trigger": "PATCH /api/tasks/:id with status=in_progress (reopen)"}
+      ],
+      "coverage_requirements": {
+        "pending→in_progress": "Test status field updated, completed_at is null",
+        "in_progress→done": "Test status=done, completed_at is set to now()",
+        "*→cancelled": "Test cancelled is a terminal state (cannot transition to in_progress?)",
+        "in_progress→in_progress": "Test idempotent re-update does not change completed_at"
+      }
+    },
+    {
+      "component_id": "CTA-COMP-007",
+      "component_name": "bridge",
+      "states": ["open", "responded", "closed", "escalated"],
+      "transitions": [
+        {"from": "open", "to": "responded", "trigger": "POST respondToExchange(id, response)"},
+        {"from": "open", "to": "escalated", "trigger": "PATCH /api/bridge/:id with status=escalated OR after timeout"},
+        {"from": "responded", "to": "closed", "trigger": "POST closeExchange(id)"},
+        {"from": "responded", "to": "open", "trigger": "PATCH /api/bridge/:id with status=open (reopen)"},
+        {"from": "escalated", "to": "responded", "trigger": "POST respondToExchange(id, response)"},
+        {"from": "escalated", "to": "closed", "trigger": "POST closeExchange(id)"}
+      ],
+      "coverage_requirements": {
+        "open→responded": "Test responded_at is set, status changes",
+        "responded→closed": "Test closed_at is set, status=closed",
+        "open→escalated": "Test escalation path (timeout-based or manual)",
+        "responded→open (reopen)": "Test reopening a responded exchange"
+      }
+    },
+    {
+      "component_id": "CTA-COMP-005",
+      "component_name": "context",
+      "states": ["absent", "set", "updated", "deleted"],
+      "transitions": [
+        {"from": "absent", "to": "set", "trigger": "POST /api/context with key=value"},
+        {"from": "set", "to": "updated", "trigger": "POST /api/context with same key, new value"},
+        {"from": "set", "to": "deleted", "trigger": "DELETE /api/context/:key"},
+        {"from": "updated", "to": "deleted", "trigger": "DELETE /api/context/:key"},
+        {"from": "updated", "to": "updated", "trigger": "POST /api/context with same key"}
+      ],
+      "coverage_requirements": {
+        "absent→set": "Test context row created with type=string (default)",
+        "set→updated": "Test updated_at advances, value changes",
+        "set→deleted": "Test row removed, subsequent GET returns null",
+        "updated→updated": "Test multiple updates create history entries (getContextHistory)"
+      }
+    }
+  ]
+}

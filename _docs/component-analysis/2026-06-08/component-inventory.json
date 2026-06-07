@@ -1,0 +1,237 @@
+{
+  "version": "1.0",
+  "produced_at": "2026-06-07T22:14:00+02:00",
+  "repo": "https://github.com/johrenberger/creative-ai",
+  "branch": "main",
+  "commit": "657358b",
+  "profile": "standard",
+  "components": [
+    {
+      "id": "CTA-COMP-001",
+      "name": "db",
+      "responsibility": "SQLite database connection, schema initialization, pragmas, and migration. Central data access for all domain modules.",
+      "public_interface": [
+        "getDb(): Database",
+        "initializeDatabase(): void",
+        "closeDatabase(): void",
+        "getSchemaStats(): {tables: number, indexes: number}"
+      ],
+      "dependencies_in": [
+        {"name": "better-sqlite3", "type": "Third Party"},
+        {"name": "fs", "type": "Node Built-in"},
+        {"name": "path", "type": "Node Built-in"},
+        {"name": "url", "type": "Node Built-in"}
+      ],
+      "dependencies_out": [
+        {"name": "all domain modules (auth, tasks, memory, context, bridge)", "type": "Internal"}
+      ],
+      "risk_tier": "T1",
+      "test_boundary": "unit",
+      "state": "CLEAR",
+      "source_files": ["src/db.js"],
+      "test_files": ["tests/db.test.js", "tests/sql.test.js"]
+    },
+    {
+      "id": "CTA-COMP-002",
+      "name": "auth",
+      "responsibility": "User registration, login, session token generation, password hashing (bcrypt), session lifecycle.",
+      "public_interface": [
+        "createUser(username, email, password): Promise<User>",
+        "getUserByUsernameOrEmail(usernameOrEmail): User",
+        "generateSessionToken(): string"
+      ],
+      "dependencies_in": [
+        {"name": "db (getDb)", "type": "Internal"},
+        {"name": "bcrypt", "type": "Third Party"},
+        {"name": "crypto (Node built-in)", "type": "Third Party"}
+      ],
+      "dependencies_out": [
+        {"name": "server (auth endpoints)", "type": "Internal"},
+        {"name": "middleware/auth (session validation)", "type": "Internal"}
+      ],
+      "risk_tier": "T1",
+      "test_boundary": "component",
+      "state": "CLEAR",
+      "source_files": ["src/auth.js"],
+      "test_files": ["tests/auth.test.js", "tests/auth.unit.test.js"]
+    },
+    {
+      "id": "CTA-COMP-003",
+      "name": "auth-middleware",
+      "responsibility": "Express middleware for session validation. requireAuth blocks unauthenticated requests; optionalAuth attaches user if session present.",
+      "public_interface": [
+        "requireAuth(req, res, next): void",
+        "optionalAuth(req, res, next): void"
+      ],
+      "dependencies_in": [
+        {"name": "auth (parseSessionCookie)", "type": "Internal"},
+        {"name": "express", "type": "Third Party"}
+      ],
+      "dependencies_out": [
+        {"name": "server (route protection)", "type": "Internal"}
+      ],
+      "risk_tier": "T1",
+      "test_boundary": "component",
+      "state": "CLEAR",
+      "source_files": ["src/middleware/auth.js"],
+      "test_files": ["tests/middleware-auth.test.js"]
+    },
+    {
+      "id": "CTA-COMP-004",
+      "name": "tasks",
+      "responsibility": "Task CRUD operations, priority scoring (priority × urgency), status transitions, project/tag filtering.",
+      "public_interface": [
+        "createTask(input): Task",
+        "getTasks(filter): Task[]",
+        "getTask(id): Task",
+        "updateTask(id, changes): Task",
+        "deleteTask(id): void",
+        "getTaskStats(): Stats",
+        "calculatePriorityScore(priority, urgency): number"
+      ],
+      "dependencies_in": [
+        {"name": "db (getDb)", "type": "Internal"}
+      ],
+      "dependencies_out": [
+        {"name": "server (task endpoints)", "type": "Internal"}
+      ],
+      "risk_tier": "T1",
+      "test_boundary": "unit",
+      "state": "CLEAR",
+      "source_files": ["src/tasks.js"],
+      "test_files": ["tests/tasks.test.js"]
+    },
+    {
+      "id": "CTA-COMP-005",
+      "name": "context",
+      "responsibility": "Project context storage with type-tagged values (string, json, number, boolean). Preferences as a key-value store.",
+      "public_interface": [
+        "setContext(key, value, type, project): Context",
+        "getContext(key, project): Context",
+        "getAllContext(project): Context[]",
+        "deleteContext(key, project): void",
+        "getContextHistory(key): Context[]",
+        "setPreference(key, value): void",
+        "getPreference(key, defaultValue): any",
+        "getAllPreferences(): Record<string, any>"
+      ],
+      "dependencies_in": [
+        {"name": "db (getDb)", "type": "Internal"}
+      ],
+      "dependencies_out": [
+        {"name": "server (context endpoints)", "type": "Internal"}
+      ],
+      "risk_tier": "T2",
+      "test_boundary": "unit",
+      "state": "CLEAR",
+      "source_files": ["src/context.js"],
+      "test_files": ["tests/context.test.js"]
+    },
+    {
+      "id": "CTA-COMP-006",
+      "name": "memory",
+      "responsibility": "Long-term memory storage with full-text-style search, type classification (note, decision, preference, pattern, learning, fact), confidence scoring, access tracking.",
+      "public_interface": [
+        "storeMemory(content, type, tags, project): Memory",
+        "searchMemories(query, limit): Memory[]",
+        "getMemory(id): Memory",
+        "updateMemory(id, changes): Memory",
+        "deleteMemory(id): void",
+        "getMemoryStats(): Stats",
+        "getRecentMemories(limit): Memory[]"
+      ],
+      "dependencies_in": [
+        {"name": "db (getDb)", "type": "Internal"}
+      ],
+      "dependencies_out": [
+        {"name": "server (memory endpoints)", "type": "Internal"},
+        {"name": "bridge (inter-component messaging)", "type": "Internal"}
+      ],
+      "risk_tier": "T2",
+      "test_boundary": "unit",
+      "state": "CLEAR",
+      "source_files": ["src/memory.js"],
+      "test_files": ["tests/memory.test.js"]
+    },
+    {
+      "id": "CTA-COMP-007",
+      "name": "bridge",
+      "responsibility": "Structured exchange management between Justin and Clawdexter. Exchange types: task, clarification, decision, feedback, planning, review. Priority queue semantics.",
+      "public_interface": [
+        "createExchange(input): Exchange",
+        "getExchange(id): Exchange",
+        "respondToExchange(id, response): Exchange",
+        "closeExchange(id): Exchange",
+        "getOpenExchanges(filter): Exchange[]",
+        "getExchangeStats(): Stats"
+      ],
+      "dependencies_in": [
+        {"name": "db (getDb)", "type": "Internal"},
+        {"name": "memory (storeMemory)", "type": "Internal"}
+      ],
+      "dependencies_out": [
+        {"name": "server (bridge endpoints)", "type": "Internal"}
+      ],
+      "risk_tier": "T2",
+      "test_boundary": "unit",
+      "state": "CLEAR",
+      "source_files": ["src/bridge.js"],
+      "test_files": ["tests/bridge.test.js"]
+    },
+    {
+      "id": "CTA-COMP-008",
+      "name": "server",
+      "responsibility": "Express HTTP API + WebSocket server. Route definitions, request validation, security middleware (helmet, rate-limit, CORS), session cookie handling, broadcast channel for real-time updates.",
+      "public_interface": [
+        "GET /health",
+        "GET /api/stats",
+        "POST /api/auth/register",
+        "POST /api/auth/login",
+        "POST /api/auth/logout",
+        "GET /api/auth/session",
+        "POST/GET/PATCH/DELETE /api/tasks[/:id]",
+        "POST/GET/DELETE /api/context[/:key]",
+        "POST/GET/PATCH/DELETE /api/memory[/:id]",
+        "GET /api/memory/search",
+        "GET /api/memory/recent",
+        "POST /api/bridge/message",
+        "WebSocket /ws",
+        "broadcast(event, payload): void"
+      ],
+      "dependencies_in": [
+        {"name": "express, cors, helmet, express-rate-limit, ws (npm)", "type": "Third Party"},
+        {"name": "auth, tasks, context, memory, bridge, db, middleware/auth (all internal)", "type": "Internal"},
+        {"name": "crypto (Node built-in)", "type": "Third Party"}
+      ],
+      "dependencies_out": [
+        {"name": "client (Telegram, CLI, web UI)", "type": "External"}
+      ],
+      "risk_tier": "T1",
+      "test_boundary": "integration",
+      "state": "CLEAR",
+      "source_files": ["src/server.js"],
+      "test_files": ["tests/server.test.js", "tests/server-coverage.test.js", "tests/security.test.js", "tests/e2e/test_cti.py"]
+    },
+    {
+      "id": "CTA-COMP-009",
+      "name": "cli",
+      "responsibility": "Local REPL-style client for the CTI API. Multiple interaction modes (task, memory, exchange, etc.) over HTTP.",
+      "public_interface": [
+        "node src/cli.js (with subcommands and interactive REPL)"
+      ],
+      "dependencies_in": [
+        {"name": "readline (Node built-in)", "type": "Third Party"},
+        {"name": "http (Node built-in)", "type": "Third Party"}
+      ],
+      "dependencies_out": [
+        {"name": "server (HTTP API)", "type": "External"}
+      ],
+      "risk_tier": "T3",
+      "test_boundary": "e2e",
+      "state": "CLEAR",
+      "source_files": ["src/cli.js"],
+      "test_files": ["tests/cli.test.js"],
+      "notes": "Coverage: 0% statements, 0% functions. The CLI is exercised via tests but Jest cannot collect coverage from child processes spawned via spawn/exec. Tests likely stub the HTTP layer and don't import the CLI module's code path."
+    }
+  ]
+}

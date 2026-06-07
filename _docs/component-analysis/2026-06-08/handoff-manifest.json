@@ -1,0 +1,78 @@
+{
+  "produced_at": "2026-06-07T22:14:00+02:00",
+  "profile": "standard",
+  "repo": "https://github.com/johrenberger/creative-ai",
+  "branch": "main",
+  "commit": "657358b",
+  "summary": {
+    "components_detected": 9,
+    "behavioral_coverage_percent": 75.6,
+    "components_at_100pct": 5,
+    "components_at_0pct": 1,
+    "gaps_total": 10,
+    "gaps_by_priority": {"P0": 4, "P1": 3, "P2": 3, "P3": 0},
+    "json_files_emitted": 7,
+    "json_files_skipped": 2
+  },
+  "artifacts": [
+    {
+      "file": "component-inventory.json",
+      "description": "9 components: db, auth, auth-middleware, tasks, context, memory, bridge, server, cli. Risk tiers: 4x T1, 3x T2, 1x T3.",
+      "consumer": "application-test-coverage",
+      "consumer_input_mapping": "Components with risk_tier in (T1, T2) are eligible for the focused picks. Component 'state' must be CLEAR (not UNCLEAR). Use 'test_boundary' to decide which test layer to extend."
+    },
+    {
+      "file": "gap-backlog.json",
+      "description": "10 gaps: 4 P0, 3 P1, 3 P2. P0 are all auth-surface issues. Top 5 by priority: CTA-GAP-001 (auth password validation), CTA-GAP-002 (middleware expired session), CTA-GAP-008 (XSS in server.js), CTA-GAP-009 (auth session expiration policy), CTA-GAP-003 (middleware malformed cookie).",
+      "consumer": "application-test-coverage",
+      "consumer_input_mapping": "Filter gaps by priority in (P0, P1) AND risk in (T1, T2). Take top MAX_FILES_PER_BATCH (default 5). For each gap, set 'source_file' as the test file path, run targeted test, parse coverage delta from coverage-final.json (Istanbul 1.0)."
+    },
+    {
+      "file": "behavior-coverage.json",
+      "description": "Per-component behavioral coverage with explicit gaps. CLI is honestly 0% with a 'subprocess execution' gap reason. 5 of 9 components at 100%.",
+      "consumer": "none",
+      "consumer_input_mapping": "Reference for human review. Coverage workflow does not consume this directly."
+    },
+    {
+      "file": "dependency-risk-matrix.json",
+      "description": "12 dependencies classified by type, failure impact, likelihood. T1 risks: bcrypt, helmet. T2 risks: better-sqlite3, ws, express-rate-limit, DOMPurify, fs. Mostly T3-T4.",
+      "consumer": "application-test-coverage",
+      "consumer_input_mapping": "For each gap, look up the dependency's test_strategy. 'Real' = use real in-memory or Testcontainers equivalent. The CTI repo uses better-sqlite3, so the test setup should use ':memory:' SQLite."
+    },
+    {
+      "file": "state-transition-matrix.json",
+      "description": "4 components with non-trivial state machines: auth, tasks, bridge, context. 27 transitions total. Coverage requirements listed per transition.",
+      "consumer": "application-test-coverage",
+      "consumer_input_mapping": "Use the transition matrix to design new tests for the gaps. E.g. CTA-GAP-001 (auth validation) needs tests for the 'Registered→Authenticated' and 'SessionExpired→Authenticated' transitions."
+    },
+    {
+      "file": "contract-inventory.json",
+      "description": "15 contracts (14 HTTP + 1 WebSocket). All documented from source inspection. No OpenAPI/Swagger file exists. WebSocket contract (CTA-CTC-015) is not exercised by the test suite (CTA-GAP-004).",
+      "consumer": "application-test-coverage",
+      "consumer_input_mapping": "Use contracts to write supertest-based integration tests. Each contract's auth_required field tells you whether to include a session cookie."
+    },
+    {
+      "file": "risk-priority-ranking.json",
+      "description": "Components ranked by composite risk. server is P0 (score 26), auth and auth-middleware are P1 (22, 21). Most are P2 (13-17 range). CLI is P3 (14).",
+      "consumer": "application-test-coverage",
+      "consumer_input_mapping": "Sort gaps by their component's priority. Fix P0 first (server), then P1 (auth, auth-middleware), then P2 in order. CLI (P3) is the lowest-priority work."
+    },
+    {
+      "file": "mutation-roadmap.json",
+      "status": "SKIPPED",
+      "reason": "FULL profile only. This is a STANDARD run."
+    },
+    {
+      "file": "test-creation-input-schema.json",
+      "status": "SKIPPED",
+      "reason": "FULL profile only. This is a STANDARD run."
+    }
+  ],
+  "next_steps": [
+    "Run application-test-coverage with MAX_FILES_PER_BATCH=5 to close the 5 highest-priority gaps (CTA-GAP-001, -002, -003, -008, -009). All are auth/server surface.",
+    "Use the focused picks: tests/auth.test.js (extend), tests/middleware-auth.test.js (extend), tests/server.test.js or tests/security.test.js (extend for XSS).",
+    "After coverage gaps close, run application-mutation-testing on the auth and server components (P0/P1 risk tiers).",
+    "For the CLI 0% coverage (CTA-GAP-006), decide between refactor (P2) or ADR documenting the subprocess-only testing choice.",
+    "Consider adding OpenAPI spec generation from contract-inventory.json to make the API self-documenting."
+  ]
+}
