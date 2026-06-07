@@ -1,0 +1,132 @@
+{
+  "version": "1.0",
+  "produced_at": "2026-06-07T22:14:00+02:00",
+  "repo": "https://github.com/johrenberger/creative-ai",
+  "profile": "standard",
+  "scoring_legend": {
+    "business_criticality": "1=internal utility, 5=revenue-critical",
+    "change_frequency": "1=stable, 5=daily changes",
+    "dependency_count": "1=leaf, 5=central",
+    "complexity": "1=trivial, 5=high",
+    "public_exposure": "1=internal, 5=public internet",
+    "existing_coverage_inverted": "1=well-covered (100%), 5=uncovered (0%)",
+    "risk_score": "sum (6-30)",
+    "priority": "P0=top quartile (>= 23), P1=2nd (18-22), P2=3rd (13-17), P3=bottom (<= 12)"
+  },
+  "rankings": [
+    {
+      "component_id": "CTA-COMP-002",
+      "component_name": "auth",
+      "business_criticality": 5,
+      "change_frequency": 2,
+      "dependency_count": 3,
+      "complexity": 3,
+      "public_exposure": 5,
+      "existing_coverage_inverted": 4,
+      "risk_score": 22,
+      "priority": "P1"
+    },
+    {
+      "component_id": "CTA-COMP-003",
+      "component_name": "auth-middleware",
+      "business_criticality": 5,
+      "change_frequency": 1,
+      "dependency_count": 3,
+      "complexity": 2,
+      "public_exposure": 5,
+      "existing_coverage_inverted": 5,
+      "risk_score": 21,
+      "priority": "P1"
+    },
+    {
+      "component_id": "CTA-COMP-008",
+      "component_name": "server",
+      "business_criticality": 5,
+      "change_frequency": 3,
+      "dependency_count": 5,
+      "complexity": 5,
+      "public_exposure": 5,
+      "existing_coverage_inverted": 3,
+      "risk_score": 26,
+      "priority": "P0"
+    },
+    {
+      "component_id": "CTA-COMP-001",
+      "component_name": "db",
+      "business_criticality": 5,
+      "change_frequency": 1,
+      "dependency_count": 5,
+      "complexity": 2,
+      "public_exposure": 1,
+      "existing_coverage_inverted": 1,
+      "risk_score": 15,
+      "priority": "P2"
+    },
+    {
+      "component_id": "CTA-COMP-004",
+      "component_name": "tasks",
+      "business_criticality": 4,
+      "change_frequency": 3,
+      "dependency_count": 2,
+      "complexity": 3,
+      "public_exposure": 4,
+      "existing_coverage_inverted": 1,
+      "risk_score": 17,
+      "priority": "P2"
+    },
+    {
+      "component_id": "CTA-COMP-005",
+      "component_name": "context",
+      "business_criticality": 3,
+      "change_frequency": 2,
+      "dependency_count": 2,
+      "complexity": 2,
+      "public_exposure": 4,
+      "existing_coverage_inverted": 2,
+      "risk_score": 15,
+      "priority": "P2"
+    },
+    {
+      "component_id": "CTA-COMP-006",
+      "component_name": "memory",
+      "business_criticality": 4,
+      "change_frequency": 2,
+      "dependency_count": 2,
+      "complexity": 3,
+      "public_exposure": 4,
+      "existing_coverage_inverted": 1,
+      "risk_score": 16,
+      "priority": "P2"
+    },
+    {
+      "component_id": "CTA-COMP-007",
+      "component_name": "bridge",
+      "business_criticality": 3,
+      "change_frequency": 2,
+      "dependency_count": 3,
+      "complexity": 3,
+      "public_exposure": 4,
+      "existing_coverage_inverted": 1,
+      "risk_score": 16,
+      "priority": "P2"
+    },
+    {
+      "component_id": "CTA-COMP-009",
+      "component_name": "cli",
+      "business_criticality": 2,
+      "change_frequency": 1,
+      "dependency_count": 1,
+      "complexity": 4,
+      "public_exposure": 1,
+      "existing_coverage_inverted": 5,
+      "risk_score": 14,
+      "priority": "P3"
+    }
+  ],
+  "summary": {
+    "P0_count": 1,
+    "P1_count": 2,
+    "P2_count": 5,
+    "P3_count": 1
+  }
+}

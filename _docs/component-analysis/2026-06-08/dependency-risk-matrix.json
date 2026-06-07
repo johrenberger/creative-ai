@@ -1,0 +1,152 @@
+{
+  "version": "1.0",
+  "produced_at": "2026-06-07T22:14:00+02:00",
+  "repo": "https://github.com/johrenberger/creative-ai",
+  "profile": "standard",
+  "dependencies": [
+    {
+      "id": "CTA-DEP-001",
+      "name": "SQLite (better-sqlite3)",
+      "component_owner": "CTA-COMP-001 (db)",
+      "type": "Database",
+      "failure_impact": 4,
+      "likelihood": 2,
+      "risk_score": 8,
+      "risk_tier": "T3",
+      "test_strategy": "Real",
+      "rationale": "better-sqlite3 is a synchronous SQLite binding. In-memory mode (:memory:) provides a real DB with no setup. Use real DB to catch SQL syntax errors and constraint violations that mocks would miss. Failure modes: locked DB, disk full, schema drift — all observable with a real in-memory DB."
+    },
+    {
+      "id": "CTA-DEP-002",
+      "name": "bcrypt",
+      "component_owner": "CTA-COMP-002 (auth)",
+      "type": "Third Party",
+      "failure_impact": 5,
+      "likelihood": 1,
+      "risk_score": 5,
+      "risk_tier": "T4",
+      "test_strategy": "Real",
+      "rationale": "bcrypt hashing is the security boundary. Mocking would defeat the test. Use a low cost factor (4) in tests for speed; production uses default (10)."
+    },
+    {
+      "id": "CTA-DEP-003",
+      "name": "Express",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 4,
+      "likelihood": 1,
+      "risk_score": 4,
+      "risk_tier": "T4",
+      "test_strategy": "Real (via supertest)",
+      "rationale": "Use supertest to spin up the actual Express app. Express itself is well-tested upstream; we test our route configuration."
+    },
+    {
+      "id": "CTA-DEP-004",
+      "name": "WebSocket (ws)",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 3,
+      "likelihood": 2,
+      "risk_score": 6,
+      "risk_tier": "T3",
+      "test_strategy": "Real (ws client)",
+      "rationale": "Use a real ws client (Node ws library) to test WebSocket lifecycle. The CI explicitly tests this with `pytest -m websocket`."
+    },
+    {
+      "id": "CTA-DEP-005",
+      "name": "helmet (security headers)",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 4,
+      "likelihood": 1,
+      "risk_score": 4,
+      "risk_tier": "T4",
+      "test_strategy": "Real",
+      "rationale": "Verify helmet sets the expected security headers (X-Frame-Options, X-Content-Type-Options, HSTS). Tested in CI's 'Validate security headers' step."
+    },
+    {
+      "id": "CTA-DEP-006",
+      "name": "express-rate-limit",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 3,
+      "likelihood": 2,
+      "risk_score": 6,
+      "risk_tier": "T3",
+      "test_strategy": "Real",
+      "rationale": "Verify rate limiting triggers 429 after N requests. Use a low limit in tests to trigger it quickly."
+    },
+    {
+      "id": "CTA-DEP-007",
+      "name": "CORS",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 2,
+      "likelihood": 1,
+      "risk_score": 2,
+      "risk_tier": "T4",
+      "test_strategy": "Real",
+      "rationale": "Verify CORS headers on cross-origin requests. Low risk because misconfiguration is detectable and reversible."
+    },
+    {
+      "id": "CTA-DEP-008",
+      "name": "DOMPurify + jsdom (markdown sanitization)",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 5,
+      "likelihood": 2,
+      "risk_score": 10,
+      "risk_tier": "T3",
+      "test_strategy": "Real",
+      "rationale": "XSS protection is a security boundary. Real DOMPurify is required — mocking would defeat the test. Test known XSS payloads (script tags, onerror handlers, javascript: URLs)."
+    },
+    {
+      "id": "CTA-DEP-009",
+      "name": "marked (markdown parsing)",
+      "component_owner": "CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 2,
+      "likelihood": 1,
+      "risk_score": 2,
+      "risk_tier": "T4",
+      "test_strategy": "Real",
+      "rationale": "Standard markdown parser. Test edge cases (malformed markdown, empty input, large input)."
+    },
+    {
+      "id": "CTA-DEP-010",
+      "name": "File system (Node fs)",
+      "component_owner": "CTA-COMP-001 (db), CTA-COMP-008 (server)",
+      "type": "File System",
+      "failure_impact": 3,
+      "likelihood": 2,
+      "risk_score": 6,
+      "risk_tier": "T3",
+      "test_strategy": "Real (in tmp dir)",
+      "rationale": "Use a real tmp directory for the DB file. Mock the path module only if needed."
+    },
+    {
+      "id": "CTA-DEP-011",
+      "name": "Node built-in: crypto",
+      "component_owner": "CTA-COMP-002 (auth), CTA-COMP-008 (server)",
+      "type": "Third Party",
+      "failure_impact": 4,
+      "likelihood": 1,
+      "risk_score": 4,
+      "risk_tier": "T4",
+      "test_strategy": "Real",
+      "rationale": "Node's crypto module is well-tested upstream. Use it directly to generate session tokens and HMAC signatures."
+    },
+    {
+      "id": "CTA-DEP-012",
+      "name": "Docker (deployment)",
+      "component_owner": "deployment",
+      "type": "Third Party",
+      "failure_impact": 3,
+      "likelihood": 1,
+      "risk_score": 3,
+      "risk_tier": "T4",
+      "test_strategy": "Real (in CI)",
+      "rationale": "CI builds the Docker image and runs E2E tests in a container. Validates Dockerfile and runtime behavior."
+    }
+  ]
+}
