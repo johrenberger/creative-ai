@@ -70,23 +70,14 @@ describe('requireAuth with expired session (auto: CTA-GAP-002)', () => {
     expect(protectedRes.status).toBe(401);
     expect(protectedRes.body.error).toMatch(/expired|invalid/i);
 
-    // 5. The expired session row remains in the DB (current behavior).
-    // The auth.js validateSession() function returns null on expired tokens
-    // (the WHERE s.expires_at > ? check fails), but it only DELETEs the row
-    // via the idle-timeout branch (which requires 30+ minutes of inactivity,
-    // not 1 minute). Sessions with expires_at in the past are still in the DB
-    // and need to be cleaned up by cleanupExpiredSessions().
-    //
-    // This is a known gap: a successful 401 response leaves a dangling row.
-    // It's not a security bug (the token can't be used), but it is a resource leak.
-    // The analysis flagged "session deleted from DB" as expected behavior, but
-    // the implementation only deletes via the idle-timeout path.
-    // See TODO_test-generation.md and CTA-GAP-002 follow-up.
+    // 5. The expired session row is now deleted from the DB (CTA-GAP-002 fix).
+    // validateSession() now runs a single DELETE with the same predicate as
+    // the SELECT (WHERE session_token = ? AND expires_at <= ?) before returning
+    // null. This catches both "token doesn't exist" and "token expired" in one
+    // statement and prevents the resource leak where stale session rows
+    // accumulated in the DB.
     const row = db.prepare("SELECT * FROM sessions WHERE session_token = ?").get(sessionToken);
-    expect(row).toBeDefined();
-    expect(row.session_token).toBe(sessionToken);
-    // Now manually clean up so the next test in this file isn't affected
-    db.prepare("DELETE FROM sessions WHERE session_token = ?").run(sessionToken);
+    expect(row).toBeUndefined();
   });
 
   it('returns 401 when session token does not exist in DB (bogus token)', async () => {

@@ -79,7 +79,15 @@ export async function validateSession(token) {
     WHERE s.session_token = ? AND s.expires_at > ?
   `).get(token, now);
 
-  if (!session) return null;
+  if (!session) {
+    // CTA-GAP-002 fix: the SELECT above returns null for both "token doesn't exist"
+    // and "token exists but expires_at is in the past". In the second case, we want
+    // to clean up the expired row so the DB doesn't leak stale session records.
+    // A single DELETE with the same predicate as the SELECT handles both cases
+    // (no rows match if the token never existed).
+    db.prepare("DELETE FROM sessions WHERE session_token = ? AND expires_at <= ?").run(token, now);
+    return null;
+  }
 
   // Check idle timeout — if last activity was too long ago, expire the session
   // For simplicity, we update the session's expires_at on activity (sliding expiration)

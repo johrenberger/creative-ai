@@ -128,12 +128,38 @@ describe('validateSession', () => {
   });
 
   it('returns null for non-existent session token', async () => {
-    mockDb.prepare.mockReturnValue({
-      get: jest.fn().mockReturnValue(undefined)
-    });
+    // CTA-GAP-002 fix: when the SELECT returns no session, validateSession
+    // now also runs a DELETE with the same predicate. The DELETE matches
+    // zero rows if the token never existed, so this is a no-op cleanup.
+    // The unit test verifies the second prepare() call uses the right SQL.
+    const getMock = jest.fn().mockReturnValue(undefined);
+    const runMock = jest.fn();
+    mockDb.prepare.mockReturnValue({ get: getMock, run: runMock });
     
     const result = await validateSession('nonexistent-token');
     expect(result).toBeNull();
+    // Two prepare() calls: SELECT then DELETE
+    expect(mockDb.prepare).toHaveBeenCalledTimes(2);
+    expect(mockDb.prepare.mock.calls[1][0]).toMatch(/DELETE FROM sessions/);
+    expect(mockDb.prepare.mock.calls[1][0]).toMatch(/session_token = \?/);
+    expect(mockDb.prepare.mock.calls[1][0]).toMatch(/expires_at <= \?/);
+  });
+
+  it('CTA-GAP-002: deletes expired session row when token exists but is past expires_at', async () => {
+    // First SELECT returns nothing (expires_at in the past fails the > ? check).
+    // Then a DELETE with the inverted predicate cleans up the row.
+    // This is the regression test for the resource-leak fix.
+    const past = new Date(Date.now() - 60 * 1000).toISOString(); // 1 minute ago
+    const getMock = jest.fn().mockReturnValue(undefined); // SELECT returns no row
+    const runMock = jest.fn();
+    mockDb.prepare.mockReturnValue({ get: getMock, run: runMock });
+    
+    const result = await validateSession('expired-but-still-in-db-token');
+    expect(result).toBeNull();
+    // The DELETE must have been called (the row existed, even though it was expired)
+    expect(runMock).toHaveBeenCalled();
+    // Verify the DELETE was called with the right token and a current timestamp
+    expect(runMock.mock.calls[0][0]).toBe('expired-but-still-in-db-token');
   });
 
   it('returns user object for valid session', async () => {

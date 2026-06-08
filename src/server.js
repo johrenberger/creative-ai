@@ -19,7 +19,7 @@ import * as tasks from './tasks.js';
 import * as context from './context.js';
 import * as memory from './memory.js';
 import * as bridge from './bridge.js';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, parseSessionCookie } from './middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -101,12 +101,9 @@ app.get('/api/stats', (req, res) => {
 });
 
 // ============ AUTH ============
-
-function parseSessionCookie(cookieHeader) {
-  if (!cookieHeader) return null;
-  const match = cookieHeader.match(/(?:^|;\s*)session_id=([^;]*)/);
-  return match ? match[1] : null;
-}
+// parseSessionCookie is imported from src/middleware/auth.js (CTA-GAP-005 refactor).
+// The local duplicate was removed; both this module and the middleware now use
+// the same canonical implementation.
 
 app.post('/api/auth/register', async (req, res) => {
   const { username, email, password } = req.body || {};
