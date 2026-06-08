@@ -53,7 +53,7 @@ export function optionalAuth(req, res, next) {
  * @param {string} cookieHeader
  * @returns {string|null}
  */
-function parseSessionCookie(cookieHeader) {
+export function parseSessionCookie(cookieHeader) {
   if (!cookieHeader) return null;
   const match = cookieHeader.match(/(?:^|;\s*)session_id=([^;]*)/);
   return match ? match[1] : null;
